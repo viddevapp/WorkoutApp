@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-agtf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>My Workout Tracker</h1>
+    </header>
+
+    <main>
+        <section id="workouts-section">
+            <h2>My Workouts</h2>
+            <div id="workout-list">
+                <!-- Workout items will be dynamically added here -->
+            </div>
+            <button id="add-workout-btn">Add New Workout</button>
+        </section>
+
+        <section id="add-workout-form-container" class="hidden">
+            <h2>Add New Workout</h2>
+            <form id="add-workout-form">
+                <div class="form-group">
+                    <label for="workout-name">Workout Name</label>
+                    <input type="text" id="workout-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="workout-type">Workout Type</label>
+                    <select id="workout-type">
+                        <option value="strength">Strength</option>
+                        <option value="cardio">Cardio</option>
+                        <option value="flexibility">Flexibility</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="sets">Sets</label>
+                    <input type="number" id="sets" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="reps">Reps</label>
+                    <input type="number" id="reps" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="break-time">Break Time (seconds)</label>
+                    <input type="number" id="break-time" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="workout-media">Image/Video Example</label>
+                    <input type="file" id="workout-media" accept="image/*,video/*">
+                </div>
+                <button type="submit">Save Workout</button>
+                <button type="button" id="cancel-btn">Cancel</button>
+            </form>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
