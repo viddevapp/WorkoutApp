@@ -37,7 +37,7 @@
 
         <!-- Page 1: Daily Log -->
         <div id="log-page" class="page active">
-            <main>
+             <main>
                 <form id="add-exercise-form">
                     <div class="autocomplete-container">
                         <input type="text" id="exercise-name" placeholder="Type an exercise name..." autocomplete="off" required>
@@ -49,66 +49,27 @@
                         <input type="number" id="exercise-sets" placeholder="Sets" value="1">
                          <select id="log-routine-select" required>
                             <option value="" disabled selected>Add to workout...</option>
-                            <!-- Options will be populated by JS, e.g., Push Day, Leg Day -->
                         </select>
                     </div>
                     <button type="submit" id="submit-entry-btn" class="btn-primary" disabled>Add to Log</button>
                 </form>
-
                 <div class="scrollable-content">
                     <div id="totals" class="card">
-                        <div class="section-header">
-                            <h2>Day's Goals</h2>
-                            <button id="edit-goals-btn" class="text-btn">Edit Goals</button>
-                        </div>
-                        <div class="goal-stat">
-                            <div class="goal-label"><span>Total Volume</span><span id="total-volume-text">0 / 10000 lbs</span></div>
-                            <div class="progress-bar-background"><div id="volume-progress-bar" class="progress-bar-fill"></div></div>
-                        </div>
-                        <div class="goal-stat">
-                            <div class="goal-label"><span>Total Sets</span><span id="total-sets-text">0 / 25 sets</span></div>
-                            <div class="progress-bar-background"><div id="sets-progress-bar" class="progress-bar-fill"></div></div>
-                        </div>
+                        <div class="section-header"><h2>Day's Goals</h2><button id="edit-goals-btn" class="text-btn">Edit Goals</button></div>
+                        <div class="goal-stat"><div class="goal-label"><span>Total Volume</span><span id="total-volume-text">0 / 10000 lbs</span></div><div class="progress-bar-background"><div id="volume-progress-bar" class="progress-bar-fill"></div></div></div>
+                        <div class="goal-stat"><div class="goal-label"><span>Total Sets</span><span id="total-sets-text">0 / 25 sets</span></div><div class="progress-bar-background"><div id="sets-progress-bar" class="progress-bar-fill"></div></div></div>
                     </div>
                     <div id="daily-log-list"></div>
                 </div>
             </main>
-            
-            <div id="tracker-footer">
-                <div id="date-nav">
-                    <button id="prev-day-btn" aria-label="Previous Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg></button>
-                    <button id="date-display-btn" class="date-display">Today</button>
-                    <button id="next-day-btn" aria-label="Next Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg></button>
-                </div>
-            </div>
+            <div id="tracker-footer"><div id="date-nav"><button id="prev-day-btn" aria-label="Previous Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg></button><button id="date-display-btn" class="date-display">Today</button><button id="next-day-btn" aria-label="Next Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg></button></div></div>
         </div>
 
         <!-- Page 2: Routines -->
         <div id="routines-page" class="page">
              <main>
-                <div class="card">
-                    <h3>Create/Edit Routine</h3>
-                    <form id="create-routine-form">
-                        <input type="text" id="routine-name-input" placeholder="e.g., Push Day A" required>
-                        <div class="add-food-to-meal-controls">
-                            <div class="autocomplete-container">
-                                <input type="text" id="routine-exercise-name-input" placeholder="Search for an exercise..." autocomplete="off">
-                                <div id="routine-autocomplete-results" style="display: none;"></div>
-                            </div>
-                            <button type="button" id="add-exercise-to-builder-btn" class="btn-secondary" aria-label="Add Exercise to Routine">+</button>
-                        </div>
-                        <div id="routine-builder-list"></div>
-                        <div class="form-actions">
-                            <button type="submit" id="save-routine-btn" class="btn-primary" disabled>Save Routine</button>
-                        </div>
-                    </form>
-                </div>
-                <div id="saved-routines-container">
-                    <div class="section-header">
-                        <h2>My Routines</h2>
-                    </div>
-                    <div id="saved-routines-list" class="card"></div>
-                </div>
+                <div class="card"><h3>Create/Edit Routine</h3><form id="create-routine-form"><input type="text" id="routine-name-input" placeholder="e.g., Push Day A" required><div class="add-food-to-meal-controls"><div class="autocomplete-container"><input type="text" id="routine-exercise-name-input" placeholder="Search for an exercise..." autocomplete="off"><div id="routine-autocomplete-results" style="display: none;"></div></div><button type="button" id="add-exercise-to-builder-btn" class="btn-secondary" aria-label="Add Exercise to Routine">+</button></div><div id="routine-builder-list"></div><div class="form-actions"><button type="submit" id="save-routine-btn" class="btn-primary" disabled>Save Routine</button></div></form></div>
+                <div id="saved-routines-container"><div class="section-header"><h2>My Routines</h2></div><div id="saved-routines-list" class="card"></div></div>
             </main>
         </div>
 
@@ -121,18 +82,22 @@
                         <input type="text" id="db-exercise-name" placeholder="Exercise Name" required>
                         <select id="db-exercise-type" required>
                             <option value="" disabled selected>Choose type...</option>
-                            <option value="Strength">Strength</option>
-                            <option value="Cardio">Cardio</option>
-                            <option value="Flexibility">Flexibility</option>
-                            <option value="Other">Other</option>
+                            <option value="Upper Body">Upper Body</option>
+                            <option value="Lower Body">Lower Body</option>
+                            <option value="Core">Core</option>
+                            <option value="Full Body">Full Body</option>
                         </select>
+                        <!-- New File Input Section -->
+                        <div class="file-input-container">
+                            <label for="db-exercise-image-input" class="btn-secondary">Choose Image</label>
+                            <input type="file" id="db-exercise-image-input" accept="image/*,image/gif">
+                            <img id="db-exercise-thumbnail" class="hidden" alt="Exercise thumbnail preview">
+                        </div>
                         <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button>
                     </form>
                 </div>
                 <div id="db-list-container">
-                    <div class="section-header">
-                        <h2>My Exercises</h2>
-                    </div>
+                    <div class="section-header"><h2>My Exercises</h2></div>
                     <div id="db-exercise-list" class="card"></div>
                 </div>
             </main>
@@ -141,37 +106,20 @@
         <!-- Page 4: Reports -->
         <div id="reports-page" class="page">
             <main>
-                <div class="card">
-                    <h2>Last 7 Days - Total Volume</h2>
-                    <div class="chart-container">
-                        <canvas id="daily-bar-chart"></canvas>
-                    </div>
-                </div>
-                 <div class="card">
-                    <h2 class="reports-header-secondary">Weekly Breakdown by Type</h2>
-                    <div class="chart-container">
-                        <canvas id="type-doughnut-chart"></canvas>
-                    </div>
-                </div>
+                <div class="card"><h2>Last 7 Days - Total Volume</h2><div class="chart-container"><canvas id="daily-bar-chart"></canvas></div></div>
+                <div class="card"><h2 class="reports-header-secondary">Weekly Breakdown by Type</h2><div class="chart-container"><canvas id="type-doughnut-chart"></canvas></div></div>
             </main>
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal hidden">
+    <!-- Modals -->
+    <div id="settings-modal" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content"><h2>Edit Your Daily Goals</h2><form id="settings-form"><label for="goal-volume">Total Volume Goal (lbs)</label><input type="number" id="goal-volume" placeholder="e.g., 10000"><label for="goal-sets">Total Sets Goal</label><input type="number" id="goal-sets" placeholder="e.g., 25"><div class="modal-actions"><button type="button" id="cancel-settings-btn" class="btn-secondary">Cancel</button><button type="submit" class="btn-primary">Save Goals</button></div></form></div></div>
+    
+    <!-- New Image Viewer Modal -->
+    <div id="image-viewer-modal" class="modal hidden">
         <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <h2>Edit Your Daily Goals</h2>
-            <form id="settings-form">
-                <label for="goal-volume">Total Volume Goal (lbs)</label>
-                <input type="number" id="goal-volume" placeholder="e.g., 10000">
-                <label for="goal-sets">Total Sets Goal</label>
-                <input type="number" id="goal-sets" placeholder="e.g., 25">
-                <div class="modal-actions">
-                    <button type="button" id="cancel-settings-btn" class="btn-secondary">Cancel</button>
-                    <button type="submit" class="btn-primary">Save Goals</button>
-                </div>
-            </form>
+        <div class="modal-content image-modal">
+            <img id="full-size-image" alt="Full size exercise image">
         </div>
     </div>
 </body>
