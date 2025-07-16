@@ -36,6 +36,43 @@ function getFormattedDate(date) { return `${date.getFullYear()}-${String(date.ge
 function stopTimer() { clearInterval(timerInterval); timerInterval = null; closeModal(timerModal); }
 function startTimer(duration) { stopTimer(); let timeLeft = duration; openModal(timerModal); const updateDisplay = () => { const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0'); const seconds = String(timeLeft % 60).padStart(2, '0'); timerCountdown.textContent = `${minutes}:${seconds}`; }; updateDisplay(); timerInterval = setInterval(() => { timeLeft--; updateDisplay(); if (timeLeft < 0) { stopTimer(); timerAlertSound.play(); } }, 1000); }
 
+// --- NEW: Image Compression Function ---
+function compressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = event => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width *= maxHeight / height;
+                        height = maxHeight;
+                    }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = error => reject(error);
+        };
+        reader.onerror = error => reject(error);
+    });
+}
+
+
 // --- 3. RENDERING FUNCTIONS ---
 function renderCurrentPage() { const id = document.querySelector('.page.active').id; if (id === 'exercises-page') renderExerciseDatabase(); if (id === 'routines-page') { populateExerciseDropdown(); renderSavedRoutines(); } if (id === 'workout-page') { populateDailyRoutineDropdown(); renderWorkoutPage(); renderDateControls(); } }
 function renderDateControls() { const today = new Date(); today.setHours(0,0,0,0); currentDate.setHours(0,0,0,0); const isToday = currentDate.getTime() === today.getTime(); dateDisplayBtn.textContent = isToday ? 'Today' : currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); nextDayBtn.disabled = currentDate >= today; }
@@ -54,59 +91,14 @@ function handleSaveRoutine(event) { event.preventDefault(); const name = routine
 function resetRoutineForm() { createRoutineForm.reset(); routineBuilderState = { exercises: [] }; routineEditingState = { isEditing: false, id: null }; routineEditingIdInput.value = ''; saveRoutineBtn.textContent = 'Save Routine'; renderRoutineBuilderList(); }
 function changeDate(days) { currentDate.setDate(currentDate.getDate() + days); renderCurrentPage(); }
 
-// --- NEW: Import/Export Functions ---
-function exportDataToFile() {
-    try {
-        const dataAsString = JSON.stringify(allData, null, 2);
-        const blob = new Blob([dataAsString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `workout-tracker-backup-${getFormattedDate(new Date())}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    } catch (error) {
-        console.error("Export failed:", error);
-        alert("Could not export data.");
-    }
-}
-
-function importDataFromFile(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const importedData = JSON.parse(e.target.result);
-            if (!importedData.exerciseDatabase || !importedData.history || !importedData.userGoals) {
-                throw new Error("Invalid data file format.");
-            }
-            if (confirm("This will overwrite all current data. Are you sure you want to proceed?")) {
-                allData = importedData;
-                currentDate = new Date(); // Reset to today
-                saveDataToLocalStorage();
-                renderCurrentPage(); // Render the new data
-                alert("Data imported successfully!");
-            }
-        } catch (error) {
-            alert('Error reading or parsing file. Please make sure you selected a valid backup file.');
-            console.error(error);
-        } finally {
-            fileLoaderInput.value = ""; // Reset file input
-        }
-    };
-    reader.readAsText(file);
-}
+function exportDataToFile() { try { const dataAsString = JSON.stringify(allData, null, 2); const blob = new Blob([dataAsString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `workout-tracker-backup-${getFormattedDate(new Date())}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); } catch (error) { console.error("Export failed:", error); alert("Could not export data."); } }
+function importDataFromFile(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const importedData = JSON.parse(e.target.result); if (!importedData.exerciseDatabase || !importedData.history || !importedData.userGoals) { throw new Error("Invalid data file format."); } if (confirm("This will overwrite all current data. Are you sure you want to proceed?")) { allData = importedData; currentDate = new Date(); saveDataToLocalStorage(); renderCurrentPage(); alert("Data imported successfully!"); } } catch (error) { alert('Error reading or parsing file. Please make sure you selected a valid backup file.'); console.error(error); } finally { fileLoaderInput.value = ""; } }; reader.readAsText(file); }
 
 // --- 6. EVENT LISTENERS ---
-navWorkout.addEventListener('click', () => showPage('workout-page'));
-navRoutines.addEventListener('click', () => showPage('routines-page'));
-navExercises.addEventListener('click', () => showPage('exercises-page'));
+navWorkout.addEventListener('click', () => showPage('workout-page')); navRoutines.addEventListener('click', () => showPage('routines-page')); navExercises.addEventListener('click', () => showPage('exercises-page'));
 addExerciseDbForm.addEventListener('submit', handleAddOrUpdateDbEntry); addExerciseDbForm.addEventListener('input', validateDbForm);
 dbSortSelect.addEventListener('change', e => { currentDbSort = e.target.value; renderExerciseDatabase(); });
-dbExerciseImageInput.addEventListener('change', e => { const f = e.target.files[0]; if(f){ const r = new FileReader(); r.onload = e => { currentExerciseImage = e.target.result; dbExerciseThumbnail.src = e.target.result; dbExerciseThumbnail.classList.remove('hidden'); removeDbImageBtn.classList.remove('hidden'); }; r.readAsDataURL(f); }});
+dbExerciseImageInput.addEventListener('change', async (event) => { const file = event.target.files[0]; if (file) { try { const compressedDataUrl = await compressImage(file); currentExerciseImage = compressedDataUrl; dbExerciseThumbnail.src = compressedDataUrl; dbExerciseThumbnail.classList.remove('hidden'); removeDbImageBtn.classList.remove('hidden'); } catch (error) { console.error("Image compression failed:", error); alert("Could not process image."); } } });
 removeDbImageBtn.addEventListener('click', () => { currentExerciseImage = null; dbExerciseImageInput.value = ''; dbExerciseThumbnail.classList.add('hidden'); removeDbImageBtn.classList.add('hidden'); });
 dbExerciseThumbnail.addEventListener('click', () => { if (dbExerciseThumbnail.src) { fullSizeImage.src = dbExerciseThumbnail.src; openModal(imageViewerModal); }});
 dbExerciseListDiv.addEventListener('click', e => { const t = e.target; if (t.closest('.item-action-btn')) { const id = parseInt(t.dataset.id); if (t.classList.contains('edit-btn')) { const ex = allData.exerciseDatabase.find(e => e.id === id); if (ex) { resetDbForm(); dbEditingIdInput.value = ex.id; dbExerciseNameInput.value = ex.name; dbExerciseTypeSelect.value = ex.type; if (ex.image) { dbExerciseThumbnail.src = ex.image; dbExerciseThumbnail.classList.remove('hidden'); removeDbImageBtn.classList.remove('hidden'); currentExerciseImage = ex.image; } dbSubmitBtn.textContent = 'Update Exercise'; dbEditingState = { isEditing: true, id }; validateDbForm(); window.scrollTo(0,0); dbExerciseNameInput.focus(); } } else if (t.classList.contains('delete-btn')) { if (confirm('Are you sure?')) { allData.exerciseDatabase = allData.exerciseDatabase.filter(ex => ex.id !== id); saveDataToLocalStorage(); renderExerciseDatabase(); if (dbEditingState.id === id) resetDbForm(); } } } else if (t.classList.contains('db-item-thumbnail')) { const id = parseInt(t.dataset.id); const ex = allData.exerciseDatabase.find(e => e.id === id); if (ex && ex.image) { fullSizeImage.src = ex.image; openModal(imageViewerModal); } } });
@@ -129,7 +121,6 @@ actionsMenuBtn.addEventListener('click', () => actionsDropdown.classList.toggle(
 exportDataBtn.addEventListener('click', () => { exportDataToFile(); actionsDropdown.classList.add('hidden'); });
 importDataBtn.addEventListener('click', () => { fileLoaderInput.click(); actionsDropdown.classList.add('hidden'); });
 fileLoaderInput.addEventListener('change', importDataFromFile);
-
 
 // --- 7. INITIALIZE APP ---
 function initializeApp() { loadDataFromLocalStorage(); showPage('workout-page'); validateDbForm(); validateRoutineForm(); }
