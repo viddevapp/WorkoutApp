@@ -53,18 +53,8 @@
     <!-- Modals -->
     <div id="settings-modal" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content"><h2>Edit Your Daily Goals</h2><form id="settings-form"><label for="goal-volume">Total Volume Goal (lbs)</label><input type="number" id="goal-volume" placeholder="e.g., 10000"><label for="goal-sets">Total Sets Goal</label><input type="number" id="goal-sets" placeholder="e.g., 25"><div class="modal-actions"><button type="button" id="cancel-settings-btn" class="btn-secondary">Cancel</button><button type="submit" class="btn-primary">Save Goals</button></div></form></div></div>
     <div id="image-viewer-modal" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content image-modal"><img id="full-size-image" alt="Full size exercise image"></div></div>
-    
-    <!-- New Timer Modal -->
-    <div id="timer-modal" class="modal hidden">
-        <div class="modal-overlay"></div>
-        <div class="modal-content timer-modal-content">
-            <h2>Break Time</h2>
-            <div id="timer-countdown">01:00</div>
-            <button id="skip-break-btn" class="btn-secondary">Skip Break</button>
-        </div>
-    </div>
+    <div id="timer-modal" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content timer-modal-content"><h2>Break Time</h2><div id="timer-countdown">01:00</div><button id="skip-break-btn" class="btn-secondary">Skip Break</button></div></div>
 
-    <!-- Audio Alert Sound -->
     <audio id="timer-alert-sound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 </body>
 </html>
