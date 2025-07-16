@@ -1,61 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-agtf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workout Tracker</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <header>
         <h1>My Workout Tracker</h1>
     </header>
 
     <main>
+        <!-- View 1: List of individual workouts -->
         <section id="workouts-section">
-            <h2>My Workouts</h2>
-            <div id="workout-list">
-                <!-- Workout items will be dynamically added here -->
+            <div class="view-header">
+                <h2>My Workouts</h2>
+                <button id="go-to-routines-btn">Manage Routines</button>
             </div>
+            <div id="workout-list"></div>
             <button id="add-workout-btn">Add New Workout</button>
         </section>
 
-        <section id="add-workout-form-container" class="hidden">
-            <h2>Add New Workout</h2>
+        <!-- View 2: Add/Edit Workout Form -->
+        <section id="add-workout-form-container">
+            <h2 id="form-title">Add New Workout</h2>
             <form id="add-workout-form">
-                <div class="form-group">
-                    <label for="workout-name">Workout Name</label>
-                    <input type="text" id="workout-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="workout-type">Workout Type</label>
-                    <select id="workout-type">
-                        <option value="strength">Strength</option>
-                        <option value="cardio">Cardio</option>
-                        <option value="flexibility">Flexibility</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="sets">Sets</label>
-                    <input type="number" id="sets" min="1">
-                </div>
-                <div class="form-group">
-                    <label for="reps">Reps</label>
-                    <input type="number" id="reps" min="1">
-                </div>
-                <div class="form-group">
-                    <label for="break-time">Break Time (seconds)</label>
-                    <input type="number" id="break-time" min="0">
-                </div>
-                <div class="form-group">
-                    <label for="workout-media">Image/Video Example</label>
-                    <input type="file" id="workout-media" accept="image/*,video/*">
-                </div>
+                <input type="hidden" id="workout-id">
+                <div class="form-group"><label for="workout-name">Workout Name</label><input type="text" id="workout-name" required></div>
+                <div class="form-group"><label for="workout-type">Workout Type</label><select id="workout-type"><option value="strength">Strength</option><option value="cardio">Cardio</option><option value="flexibility">Flexibility</option></select></div>
+                <div class="form-group"><label for="sets">Sets</label><input type="number" id="sets" min="1"></div>
+                <div class="form-group"><label for="reps">Reps</label><input type="number" id="reps" min="1"></div>
+                <div class="form-group"><label for="break-time">Break Time (seconds)</label><input type="number" id="break-time" min="0"></div>
+                <div class="form-group"><label for="workout-media">Image/Video Example</label><input type="file" id="workout-media" accept="image/*,video/*"></div>
                 <button type="submit">Save Workout</button>
                 <button type="button" id="cancel-btn">Cancel</button>
             </form>
         </section>
+
+        <!-- View 3: List of saved routines -->
+        <section id="routines-section">
+            <div class="view-header">
+                <h2>My Routines</h2>
+                <button id="go-to-history-btn">History</button>
+                <button id="go-to-workouts-btn">Back to Workouts</button>
+            </div>
+            <div id="routine-list"></div>
+            <button id="build-new-routine-btn">Build New Routine</button>
+        </section>
+
+        <!-- View 4: Routine Builder Interface -->
+        <section id="routine-builder-section">
+            <h2>Routine Builder</h2>
+            <div class="routine-builder-form">
+                <input type="text" id="routine-name" placeholder="Enter Routine Name..." required>
+                <button id="save-routine-btn">Save Routine</button>
+                <button id="cancel-routine-builder-btn">Cancel</button>
+            </div>
+            <div class="routine-builder-columns">
+                <div id="available-workouts-column"><h3>Available Workouts</h3><div id="builder-workout-list"></div></div>
+                <div id="current-routine-column"><h3>Current Routine</h3><div id="builder-current-routine"></div></div>
+            </div>
+        </section>
+
+        <!-- View 5: Active Workout "Player" Screen -->
+        <section id="active-workout-section">
+            <div id="active-workout-details"></div>
+            <div id="timer-display">00:00</div>
+            <div id="active-workout-controls">
+                <button id="next-exercise-btn">Next Exercise</button>
+                <button id="end-workout-btn">End Workout</button>
+            </div>
+        </section>
+
+        <!-- View 6: Workout History Screen -->
+        <section id="history-section">
+            <div class="view-header">
+                <h2>Workout History</h2>
+                <!-- Added a clear history button -->
+                <button id="clear-history-btn" class="danger-btn">Clear History</button>
+                <button id="back-to-routines-from-history-btn">Back to Routines</button>
+            </div>
+            <div id="history-list"></div>
+        </section>
+
     </main>
+    
+    <audio id="timer-alert" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
     <script src="script.js"></script>
 </body>
