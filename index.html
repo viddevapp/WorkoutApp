@@ -37,10 +37,7 @@
 
         <!-- Page 1: Daily Log -->
         <div id="log-page" class="page active">
-             <main>
-                <form id="add-exercise-form"><div class="autocomplete-container"><input type="text" id="exercise-name" placeholder="Type an exercise name..." autocomplete="off" required><div id="autocomplete-results" style="display: none;"></div></div><div class="inputs-grid"><input type="number" id="exercise-weight" placeholder="Weight (lbs)" step="any"><input type="number" id="exercise-reps" placeholder="Reps"><input type="number" id="exercise-sets" placeholder="Sets" value="1"><select id="log-routine-select" required><option value="" disabled selected>Add to workout...</option></select></div><button type="submit" id="submit-entry-btn" class="btn-primary" disabled>Add to Log</button></form>
-                <div class="scrollable-content"><div id="totals" class="card"><div class="section-header"><h2>Day's Goals</h2><button id="edit-goals-btn" class="text-btn">Edit Goals</button></div><div class="goal-stat"><div class="goal-label"><span>Total Volume</span><span id="total-volume-text">0 / 10000 lbs</span></div><div class="progress-bar-background"><div id="volume-progress-bar" class="progress-bar-fill"></div></div></div><div class="goal-stat"><div class="goal-label"><span>Total Sets</span><span id="total-sets-text">0 / 25 sets</span></div><div class="progress-bar-background"><div id="sets-progress-bar" class="progress-bar-fill"></div></div></div></div><div id="daily-log-list"></div></div>
-            </main>
+             <main><form id="add-exercise-form"><div class="autocomplete-container"><input type="text" id="exercise-name" placeholder="Type an exercise name..." autocomplete="off" required><div id="autocomplete-results" style="display: none;"></div></div><div class="inputs-grid"><input type="number" id="exercise-weight" placeholder="Weight (lbs)" step="any"><input type="number" id="exercise-reps" placeholder="Reps"><input type="number" id="exercise-sets" placeholder="Sets" value="1"><select id="log-routine-select" required><option value="" disabled selected>Add to workout...</option></select></div><button type="submit" id="submit-entry-btn" class="btn-primary" disabled>Add to Log</button></form><div class="scrollable-content"><div id="totals" class="card"><div class="section-header"><h2>Day's Goals</h2><button id="edit-goals-btn" class="text-btn">Edit Goals</button></div><div class="goal-stat"><div class="goal-label"><span>Total Volume</span><span id="total-volume-text">0 / 10000 lbs</span></div><div class="progress-bar-background"><div id="volume-progress-bar" class="progress-bar-fill"></div></div></div><div class="goal-stat"><div class="goal-label"><span>Total Sets</span><span id="total-sets-text">0 / 25 sets</span></div><div class="progress-bar-background"><div id="sets-progress-bar" class="progress-bar-fill"></div></div></div></div><div id="daily-log-list"></div></div></main>
             <div id="tracker-footer"><div id="date-nav"><button id="prev-day-btn" aria-label="Previous Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg></button><button id="date-display-btn" class="date-display">Today</button><button id="next-day-btn" aria-label="Next Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg></button></div></div>
         </div>
 
@@ -54,10 +51,22 @@
              <main>
                 <div class="card">
                     <h3>Add/Edit Exercise</h3>
-                    <form id="add-exercise-db-form"><input type="text" id="db-exercise-name" placeholder="Exercise Name" required><select id="db-exercise-type" required><option value="" disabled selected>Choose type...</option><option value="Upper Body">Upper Body</option><option value="Lower Body">Lower Body</option><option value="Core">Core</option><option value="Full Body">Full Body</option></select><div class="file-input-container"><label for="db-exercise-image-input" class="btn-secondary">Choose Image</label><input type="file" id="db-exercise-image-input" accept="image/*,image/gif"><img id="db-exercise-thumbnail" class="hidden" alt="Exercise thumbnail preview"></div><button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button></form>
+                    <form id="add-exercise-db-form">
+                        <input type="hidden" id="db-editing-id">
+                        <input type="text" id="db-exercise-name" placeholder="Exercise Name" required>
+                        <select id="db-exercise-type" required><option value="" disabled selected>Choose type...</option><option value="Upper Body">Upper Body</option><option value="Lower Body">Lower Body</option><option value="Core">Core</option><option value="Full Body">Full Body</option></select>
+                        <div class="file-input-container">
+                            <label for="db-exercise-image-input" class="btn-secondary">Choose Image</label>
+                            <input type="file" id="db-exercise-image-input" accept="image/*,image/gif">
+                            <img id="db-exercise-thumbnail" class="hidden" alt="Exercise thumbnail preview">
+                            <!-- New Remove Image Button -->
+                            <button type="button" id="remove-db-image-btn" class="btn-danger hidden">Remove</button>
+                        </div>
+                        <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button>
+                    </form>
                 </div>
                 <div id="db-list-container">
-                    <div class="section-header"><h2>My Exercises</h2></div>
+                    <div class="section-header"><h2 id="db-list-header">My Exercises</h2><div class="sort-container"><label for="db-sort-select">Sort by:</label><select id="db-sort-select"><option value="name-asc">Name (A-Z)</option><option value="name-desc">Name (Z-A)</option><option value="type-asc">Type</option></select></div></div>
                     <div id="db-exercise-list" class="card"></div>
                 </div>
             </main>
