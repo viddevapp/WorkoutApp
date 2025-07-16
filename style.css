@@ -49,7 +49,7 @@ main { padding: 16px; flex-grow: 1; display: flex; flex-direction: column; overf
 .hidden { display: none !important; }
 
 /* 5. Forms, Inputs & Buttons */
-form { display: flex; flex-direction: column; gap: 12px; }
+form { display: flex; flex-direction: column; gap: 16px; }
 .inputs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 input[type="text"], input[type="number"], select { width: 100%; padding: 12px; border: 1px solid var(--color-border); background-color: var(--color-background); color: var(--color-text-primary); border-radius: var(--radius-md); font-size: 15px; transition: var(--transition-fast); font-family: var(--font-sans); }
 input:focus, select:focus { outline: none; border-color: var(--color-border-focus); box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.4); }
@@ -112,15 +112,19 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 /* 7. Specific Page & Component Overrides */
 #exercises-page .card h3, #routines-page .card h3 { text-align: center; }
 #reports-page .card h2 { text-align: center; }
-.add-food-to-meal-controls { display: flex; gap: 12px; align-items: center; }
-.add-food-to-meal-controls #add-exercise-to-builder-btn { width: auto; flex-shrink: 0; padding: 12px 16px; font-size: 18px; line-height: 1; }
-#routine-builder-list { margin-top: 8px; border-top: 1px solid var(--color-border); padding-top: 16px; display: flex; flex-direction: column; gap: 12px; }
-.meal-builder-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background-color: var(--color-background); border-radius: var(--radius-md); border: 1px solid var(--color-border); }
-.meal-builder-item > div { display: flex; align-items: center; gap: 12px; }
-.meal-builder-item span { font-weight: 500; }
-.delete-from-meal-builder-btn { background: none; border: none; color: var(--color-text-tertiary); font-size: 20px; font-weight: bold; cursor: pointer; padding: 0 8px; line-height: 1; transition: var(--transition-fast); }
-.delete-from-meal-builder-btn:hover { color: #F87171; }
-#create-routine-form .form-actions { margin-top: 8px; }
+.form-section-label { font-size: 14px; font-weight: 600; color: var(--color-text-secondary); margin-bottom: -8px; margin-top: 8px; border-bottom: 1px solid var(--color-border); padding-bottom: 8px; }
+#add-exercise-to-routine-controls .inputs-grid { grid-template-columns: 1fr 1fr 1fr auto; align-items: center; }
+#add-exercise-to-routine-controls select { flex-grow: 1; }
+#add-exercise-to-routine-controls #add-exercise-to-builder-btn { width: auto; flex-shrink: 0; padding: 12px 24px; }
+#routine-builder-list { margin-top: 0; border-top: 1px solid var(--color-border); padding-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+.routine-builder-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background-color: var(--color-background); border-radius: var(--radius-md); border: 1px solid var(--color-border); }
+.routine-builder-item-main { display: flex; align-items: center; gap: 12px; flex-grow: 1; }
+.routine-builder-item-main > div { flex-grow: 1; }
+.routine-builder-item-name { font-weight: 500; }
+.routine-builder-item-details { color: var(--color-text-secondary); font-size: 14px; }
+.routine-builder-item .delete-btn { padding: 6px; font-size: 16px; line-height: 1; }
+#saved-routines-list .exercise-item-stats { white-space: pre-wrap; }
+.form-actions { margin-top: 8px; }
 
 /* 8. Footers */
 #tracker-footer { padding: 12px 16px; background-color: var(--color-surface); border-top: 1px solid var(--color-border); padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
