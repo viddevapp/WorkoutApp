@@ -4,91 +4,175 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workout Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js" defer></script>
 </head>
 <body>
-
-    <header>
-        <h1>My Workout Tracker</h1>
-    </header>
-
-    <main>
-        <!-- View 1: List of individual workouts -->
-        <section id="workouts-section">
-            <div class="view-header">
-                <h2>My Workouts</h2>
-                <button id="go-to-routines-btn">Manage Routines</button>
+    <div id="app-container">
+        <!-- Main Navigation -->
+        <nav>
+            <div class="nav-tabs">
+                <button id="nav-log" class="nav-btn active">Daily Log</button>
+                <button id="nav-routines" class="nav-btn">Routines</button>
+                <button id="nav-exercises" class="nav-btn">Exercise List</button>
+                <button id="nav-reports" class="nav-btn">Reports</button>
             </div>
-            <div id="workout-list"></div>
-            <button id="add-workout-btn">Add New Workout</button>
-        </section>
+            <div class="nav-actions">
+                <div id="actions-menu-container">
+                    <button id="actions-menu-btn" aria-label="Actions Menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                    </button>
+                    <div id="actions-dropdown" class="hidden">
+                        <button id="import-data-btn">Import Data</button>
+                        <button id="export-data-btn">Export Data</button>
+                    </div>
+                </div>
+            </div>
+            <input type="file" id="file-loader" style="display: none;">
+        </nav>
 
-        <!-- View 2: Add/Edit Workout Form -->
-        <section id="add-workout-form-container">
-            <h2 id="form-title">Add New Workout</h2>
-            <form id="add-workout-form">
-                <input type="hidden" id="workout-id">
-                <div class="form-group"><label for="workout-name">Workout Name</label><input type="text" id="workout-name" required></div>
-                <div class="form-group"><label for="workout-type">Workout Type</label><select id="workout-type"><option value="strength">Strength</option><option value="cardio">Cardio</option><option value="flexibility">Flexibility</option></select></div>
-                <div class="form-group"><label for="sets">Sets</label><input type="number" id="sets" min="1"></div>
-                <div class="form-group"><label for="reps">Reps</label><input type="number" id="reps" min="1"></div>
-                <div class="form-group"><label for="break-time">Break Time (seconds)</label><input type="number" id="break-time" min="0"></div>
-                <div class="form-group"><label for="workout-media">Image/Video Example</label><input type="file" id="workout-media" accept="image/*,video/*"></div>
-                <button type="submit">Save Workout</button>
-                <button type="button" id="cancel-btn">Cancel</button>
+        <!-- Page 1: Daily Log -->
+        <div id="log-page" class="page active">
+            <main>
+                <form id="add-exercise-form">
+                    <div class="autocomplete-container">
+                        <input type="text" id="exercise-name" placeholder="Type an exercise name..." autocomplete="off" required>
+                        <div id="autocomplete-results" style="display: none;"></div>
+                    </div>
+                    <div class="inputs-grid">
+                        <input type="number" id="exercise-weight" placeholder="Weight (lbs)" step="any">
+                        <input type="number" id="exercise-reps" placeholder="Reps">
+                        <input type="number" id="exercise-sets" placeholder="Sets" value="1">
+                         <select id="log-routine-select" required>
+                            <option value="" disabled selected>Add to workout...</option>
+                            <!-- Options will be populated by JS, e.g., Push Day, Leg Day -->
+                        </select>
+                    </div>
+                    <button type="submit" id="submit-entry-btn" class="btn-primary" disabled>Add to Log</button>
+                </form>
+
+                <div class="scrollable-content">
+                    <div id="totals" class="card">
+                        <div class="section-header">
+                            <h2>Day's Goals</h2>
+                            <button id="edit-goals-btn" class="text-btn">Edit Goals</button>
+                        </div>
+                        <div class="goal-stat">
+                            <div class="goal-label"><span>Total Volume</span><span id="total-volume-text">0 / 10000 lbs</span></div>
+                            <div class="progress-bar-background"><div id="volume-progress-bar" class="progress-bar-fill"></div></div>
+                        </div>
+                        <div class="goal-stat">
+                            <div class="goal-label"><span>Total Sets</span><span id="total-sets-text">0 / 25 sets</span></div>
+                            <div class="progress-bar-background"><div id="sets-progress-bar" class="progress-bar-fill"></div></div>
+                        </div>
+                    </div>
+                    <div id="daily-log-list"></div>
+                </div>
+            </main>
+            
+            <div id="tracker-footer">
+                <div id="date-nav">
+                    <button id="prev-day-btn" aria-label="Previous Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg></button>
+                    <button id="date-display-btn" class="date-display">Today</button>
+                    <button id="next-day-btn" aria-label="Next Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 2: Routines -->
+        <div id="routines-page" class="page">
+             <main>
+                <div class="card">
+                    <h3>Create/Edit Routine</h3>
+                    <form id="create-routine-form">
+                        <input type="text" id="routine-name-input" placeholder="e.g., Push Day A" required>
+                        <div class="add-food-to-meal-controls">
+                            <div class="autocomplete-container">
+                                <input type="text" id="routine-exercise-name-input" placeholder="Search for an exercise..." autocomplete="off">
+                                <div id="routine-autocomplete-results" style="display: none;"></div>
+                            </div>
+                            <button type="button" id="add-exercise-to-builder-btn" class="btn-secondary" aria-label="Add Exercise to Routine">+</button>
+                        </div>
+                        <div id="routine-builder-list"></div>
+                        <div class="form-actions">
+                            <button type="submit" id="save-routine-btn" class="btn-primary" disabled>Save Routine</button>
+                        </div>
+                    </form>
+                </div>
+                <div id="saved-routines-container">
+                    <div class="section-header">
+                        <h2>My Routines</h2>
+                    </div>
+                    <div id="saved-routines-list" class="card"></div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Page 3: Exercise List -->
+        <div id="exercises-page" class="page">
+             <main>
+                <div class="card">
+                    <h3>Add/Edit Exercise</h3>
+                    <form id="add-exercise-db-form">
+                        <input type="text" id="db-exercise-name" placeholder="Exercise Name" required>
+                        <select id="db-exercise-type" required>
+                            <option value="" disabled selected>Choose type...</option>
+                            <option value="Strength">Strength</option>
+                            <option value="Cardio">Cardio</option>
+                            <option value="Flexibility">Flexibility</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button>
+                    </form>
+                </div>
+                <div id="db-list-container">
+                    <div class="section-header">
+                        <h2>My Exercises</h2>
+                    </div>
+                    <div id="db-exercise-list" class="card"></div>
+                </div>
+            </main>
+        </div>
+        
+        <!-- Page 4: Reports -->
+        <div id="reports-page" class="page">
+            <main>
+                <div class="card">
+                    <h2>Last 7 Days - Total Volume</h2>
+                    <div class="chart-container">
+                        <canvas id="daily-bar-chart"></canvas>
+                    </div>
+                </div>
+                 <div class="card">
+                    <h2 class="reports-header-secondary">Weekly Breakdown by Type</h2>
+                    <div class="chart-container">
+                        <canvas id="type-doughnut-chart"></canvas>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h2>Edit Your Daily Goals</h2>
+            <form id="settings-form">
+                <label for="goal-volume">Total Volume Goal (lbs)</label>
+                <input type="number" id="goal-volume" placeholder="e.g., 10000">
+                <label for="goal-sets">Total Sets Goal</label>
+                <input type="number" id="goal-sets" placeholder="e.g., 25">
+                <div class="modal-actions">
+                    <button type="button" id="cancel-settings-btn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Goals</button>
+                </div>
             </form>
-        </section>
-
-        <!-- View 3: List of saved routines -->
-        <section id="routines-section">
-            <div class="view-header">
-                <h2>My Routines</h2>
-                <button id="go-to-history-btn">History</button>
-                <button id="go-to-workouts-btn">Back to Workouts</button>
-            </div>
-            <div id="routine-list"></div>
-            <button id="build-new-routine-btn">Build New Routine</button>
-        </section>
-
-        <!-- View 4: Routine Builder Interface -->
-        <section id="routine-builder-section">
-            <h2>Routine Builder</h2>
-            <div class="routine-builder-form">
-                <input type="text" id="routine-name" placeholder="Enter Routine Name..." required>
-                <button id="save-routine-btn">Save Routine</button>
-                <button id="cancel-routine-builder-btn">Cancel</button>
-            </div>
-            <div class="routine-builder-columns">
-                <div id="available-workouts-column"><h3>Available Workouts</h3><div id="builder-workout-list"></div></div>
-                <div id="current-routine-column"><h3>Current Routine</h3><div id="builder-current-routine"></div></div>
-            </div>
-        </section>
-
-        <!-- View 5: Active Workout "Player" Screen -->
-        <section id="active-workout-section">
-            <div id="active-workout-details"></div>
-            <div id="timer-display">00:00</div>
-            <div id="active-workout-controls">
-                <button id="next-exercise-btn">Next Exercise</button>
-                <button id="end-workout-btn">End Workout</button>
-            </div>
-        </section>
-
-        <!-- View 6: Workout History Screen -->
-        <section id="history-section">
-            <div class="view-header">
-                <h2>Workout History</h2>
-                <!-- Added a clear history button -->
-                <button id="clear-history-btn" class="danger-btn">Clear History</button>
-                <button id="back-to-routines-from-history-btn">Back to Routines</button>
-            </div>
-            <div id="history-list"></div>
-        </section>
-
-    </main>
-    
-    <audio id="timer-alert" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
-
-    <script src="script.js"></script>
+        </div>
+    </div>
 </body>
 </html>
