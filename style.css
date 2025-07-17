@@ -70,8 +70,8 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 /* 7. Specific Page Overrides */
 #exercises-page .card h3, #routines-page .card h3 { text-align: center; }
 .form-section-label { font-size: 14px; font-weight: 600; color: var(--color-text-secondary); margin-bottom: -8px; margin-top: 8px; border-bottom: 1px solid var(--color-border); padding-bottom: 8px; }
-#add-exercise-to-routine-controls .inputs-grid { grid-template-columns: repeat(4, 1fr); align-items: center; margin-top: 12px; }
-#add-exercise-to-routine-controls #add-exercise-to-builder-btn { grid-column: 4 / 5; }
+#add-exercise-to-routine-controls .inputs-grid { grid-template-columns: repeat(3, 1fr); align-items: center; margin-top: 12px; }
+#add-exercise-to-routine-controls #add-exercise-to-builder-btn { grid-column: 3 / 4; }
 #routine-builder-list { margin-top: 0; border-top: 1px solid var(--color-border); padding-top: 16px; display: flex; flex-direction: column; gap: 12px; }
 .routine-builder-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background-color: var(--color-background); border-radius: var(--radius-md); border: 1px solid var(--color-border); }
 .routine-builder-item-main { display: flex; align-items: center; gap: 12px; flex-grow: 1; }
@@ -94,7 +94,7 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .set-indicator { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--color-border); transition: background-color 0.3s ease; }
 .set-indicator.completed { background-color: var(--color-accent); border-color: var(--color-accent); }
 .exercise-actions { display: flex; gap: 12px; margin-top: 12px; }
-.exercise-actions .btn-primary, .exercise-actions .btn-secondary { width: 50%; }
+.exercise-actions .btn-primary { width: 100%; }
 .workout-summary-card { padding: 0; }
 .summary-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid var(--color-border); }
 .summary-header h2 { border: none; }
@@ -119,6 +119,3 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .modal-content { position: relative; z-index: 101; background-color: var(--color-surface); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); width: 100%; max-width: 400px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); }
 .modal-content.image-modal { background: none; border: none; box-shadow: none; padding: 0; width: auto; max-width: 90vw; max-height: 90vh; }
 #full-size-image { max-width: 100%; max-height: 100%; display: block; border-radius: var(--radius-lg); cursor: pointer; }
-.timer-modal-content { text-align: center; }
-#timer-countdown { font-size: 5rem; font-weight: 700; color: var(--color-primary); margin: 16px 0; }
-#skip-break-btn { width: auto; }
