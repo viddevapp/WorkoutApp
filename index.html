@@ -33,7 +33,8 @@
         <div id="workout-page" class="page active">
              <main>
                 <div id="routine-selection-area" class="card"><select id="daily-routine-select"><option value="" disabled selected>Select a routine to begin...</option></select><button id="start-routine-btn" class="btn-primary" disabled>Start Routine</button></div>
-                <div id="active-routine-info" class="card hidden"><div class="section-header"><h2 id="active-routine-name"></h2><button id="finish-workout-btn" class="btn-danger">Finish Workout</button></div></div>
+                <!-- MODIFIED: Added a wrapper for the header action buttons -->
+                <div id="active-routine-info" class="card hidden"><div class="section-header"><h2 id="active-routine-name"></h2><div class="header-actions"><button id="reset-workout-btn" class="text-btn">Reset</button><button id="finish-workout-btn" class="btn-danger">Finish Workout</button></div></div></div>
                 <div id="active-routine-display" class="scrollable-content"><div class="placeholder-card">Select a routine and click "Start" to see your exercises.</div></div>
             </main>
             <div id="tracker-footer"><div id="date-nav"><button id="prev-day-btn" aria-label="Previous Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg></button><button id="date-display-btn" class="date-display">Today</button><button id="next-day-btn" aria-label="Next Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg></button></div></div>
@@ -55,7 +56,13 @@
     </div>
 
     <!-- Modals -->
-    <div id="settings-modal" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content"><h2>Edit Your Daily Goals</h2><form id="settings-form"><label for="goal-volume">Total Volume Goal (lbs)</label><input type="number" id="goal-volume" placeholder="e.g., 10000"><label for="goal-sets">Total Sets Goal</label><input type="number" id="goal-sets" placeholder="e.g., 25"><div class="modal-actions"><button type="button" id="cancel-settings-btn" class="btn-secondary">Cancel</button><button type="submit" class="btn-primary">Save Goals</button></div></form></div></div>
     <div id="image-viewer-modal" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content image-modal"><img id="full-size-image" alt="Full size exercise image"></div></div>
+    <div id="countdown-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content countdown-content">
+            <span id="countdown-timer-display">30</span>
+            <small>Break Time</small>
+        </div>
+    </div>
 </body>
 </html>

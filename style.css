@@ -41,7 +41,7 @@ select { appearance: none; background-image: url('data:image/svg+xml;charset=US-
 .btn-danger:hover { background-color: var(--color-danger-hover); }
 .btn-primary:disabled, .btn-secondary:disabled, .btn-danger:disabled { background-color: var(--color-surface); color: var(--color-text-tertiary); cursor: not-allowed; border-color: var(--color-border); }
 .text-btn { background: none; border: none; color: var(--color-primary); cursor: pointer; font-size: 14px; font-weight: 600; transition: var(--transition-fast); padding: 0; }
-.text-btn:hover { color: var(--color-primary-hover); }
+.text-btn:hover { color: var(--color-primary-hover); text-decoration: underline; }
 .file-input-container { display: flex; align-items: center; gap: 12px; }
 .file-input-container label.btn-secondary, .file-input-container button.btn-danger { flex-shrink: 0; width: auto; padding: 8px 16px; font-size: 14px; margin: 0; }
 .file-input-container input[type="file"] { display: none; }
@@ -84,7 +84,12 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .placeholder-card { background-color: var(--color-surface); border: 2px dashed var(--color-border); border-radius: var(--radius-lg); padding: 40px; text-align: center; color: var(--color-text-secondary); }
 #routine-selection-area { display: flex; gap: 16px; align-items: center; }
 #active-routine-info .section-header { border: none; padding: 0; margin: 0; }
-#active-routine-info .btn-danger { width: auto; margin: 0; }
+/* ADDED: Styles for the header action buttons wrapper */
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.header-actions .btn-danger { width: auto; }
+.header-actions .text-btn { color: var(--color-text-secondary); }
+.header-actions .text-btn:hover { color: var(--color-danger); }
+
 .active-routine-exercise { display: flex; gap: 16px; border: 2px solid transparent; transition: border-color 0.3s ease; }
 .active-routine-exercise.current { border-color: var(--color-primary); }
 .active-routine-exercise.finished { opacity: 0.5; }
@@ -97,23 +102,25 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .summary-exercise-list { padding: 16px; }
 .summary-exercise-item { padding: 8px 0; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; gap: 12px; }
 .summary-exercise-item:last-child { border-bottom: none; }
-/* --- NEW: Progress Button Styles --- */
-.progress-button {
-    background-color: var(--color-surface-raised); border: 1px solid var(--color-border);
-    position: relative; overflow: hidden;
-}
-.progress-button-fill {
-    position: absolute; top: 0; left: 0; height: 100%;
-    background-color: var(--color-primary);
-    transition: width 0.3s ease;
-}
-.progress-button-text {
-    position: relative; z-index: 1;
-    color: var(--color-text-primary);
-}
-.progress-button.finished .progress-button-text {
-    color: var(--color-text-on-primary);
-}
+.progress-button { background-color: var(--color-surface-raised); border: 1px solid var(--color-border); position: relative; overflow: hidden; padding: 0; width: 100%; border-radius: var(--radius-md); }
+.progress-button-fill { position: absolute; top: 0; left: 0; height: 100%; background-color: var(--color-primary); transition: width 0.3s ease; }
+/* MODIFIED: Bigger 'Complete Set' button */
+.progress-button-text { position: relative; z-index: 1; color: var(--color-text-primary); padding: 16px; font-size: 17px; font-weight: 600; }
+.progress-button.finished .progress-button-text { color: var(--color-text-on-primary); }
+.timer-controls { background-color: var(--color-background); border-radius: var(--radius-md); padding: 12px; margin-top: 16px; border: 1px solid var(--color-border); }
+.timer-toggle-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.timer-toggle-area label { font-weight: 500; font-size: 14px; }
+.timer-intervals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+/* MODIFIED: Sleeker timer buttons */
+.timer-interval-btn { background-color: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border); padding: 6px 10px; border-radius: var(--radius-sm); font-weight: 500; font-size: 13px; transition: var(--transition-fast); cursor: pointer; }
+.timer-interval-btn:disabled { background-color: var(--color-background); color: var(--color-text-tertiary); cursor: not-allowed; }
+.timer-interval-btn.selected { background-color: var(--color-primary); color: var(--color-text-on-primary); border-color: var(--color-primary-hover); }
+.toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--color-surface-raised); transition: .4s; border-radius: 34px; border: 1px solid var(--color-border); }
+.toggle-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .toggle-slider { background-color: var(--color-accent); }
+input:checked + .toggle-slider:before { transform: translateX(20px); }
 /* 8. Footers */
 #tracker-footer { padding: 12px 16px; background-color: var(--color-surface); border-top: 1px solid var(--color-border); padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
 #date-nav { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
@@ -132,3 +139,7 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .modal-content { position: relative; z-index: 101; background-color: var(--color-surface); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); width: 100%; max-width: 400px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); }
 .modal-content.image-modal { background: none; border: none; box-shadow: none; padding: 0; width: auto; max-width: 90vw; max-height: 90vh; }
 #full-size-image { max-width: 100%; max-height: 100%; display: block; border-radius: var(--radius-lg); cursor: pointer; }
+/* MODIFIED: Countdown modal content is now clickable */
+.countdown-content { display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--color-surface-raised); width: 200px; height: 200px; max-width: none; border-radius: 50%; box-shadow: 0 0 30px rgba(0,0,0,0.4); cursor: pointer; }
+#countdown-timer-display { font-size: 80px; font-weight: 700; color: var(--color-text-primary); line-height: 1; pointer-events: none; }
+.countdown-content small { font-size: 16px; color: var(--color-text-secondary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none; }
