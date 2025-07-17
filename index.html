@@ -33,7 +33,6 @@
         <div id="workout-page" class="page active">
              <main>
                 <div id="routine-selection-area" class="card"><select id="daily-routine-select"><option value="" disabled selected>Select a routine to begin...</option></select><button id="start-routine-btn" class="btn-primary" disabled>Start Routine</button></div>
-                <!-- MODIFIED: Added a wrapper for the header action buttons -->
                 <div id="active-routine-info" class="card hidden"><div class="section-header"><h2 id="active-routine-name"></h2><div class="header-actions"><button id="reset-workout-btn" class="text-btn">Reset</button><button id="finish-workout-btn" class="btn-danger">Finish Workout</button></div></div></div>
                 <div id="active-routine-display" class="scrollable-content"><div class="placeholder-card">Select a routine and click "Start" to see your exercises.</div></div>
             </main>
@@ -42,16 +41,65 @@
 
         <!-- Page 2: Routines -->
         <div id="routines-page" class="page">
-             <main><div class="card"><h3>Create/Edit Routine</h3><form id="create-routine-form"><input type="hidden" id="routine-editing-id"><input type="text" id="routine-name-input" placeholder="Routine Name (e.g., Push Day A)" required><div id="add-exercise-to-routine-controls"><p class="form-section-label">Add Exercises</p><select id="routine-exercise-select"><option value="" disabled selected>Choose an exercise...</option></select><div class="inputs-grid">
-                 <input type="number" id="routine-sets-input" placeholder="Sets" value="3">
-                 <input type="text" id="routine-reps-input" placeholder="Reps (e.g., 8-12)">
-                 <button type="button" id="add-exercise-to-builder-btn" class="btn-secondary" aria-label="Add Exercise to Routine">Add</button>
-            </div></div><div id="routine-builder-list"></div><div class="form-actions"><button type="submit" id="save-routine-btn" class="btn-primary" disabled>Save Routine</button></div></form></div><div id="saved-routines-container"><div class="section-header"><h2>My Routines</h2></div><div id="saved-routines-list" class="card"></div></div></main>
+             <main>
+                <div class="card">
+                    <h3>Create/Edit Routine</h3>
+                    <form id="create-routine-form">
+                        <input type="hidden" id="routine-editing-id">
+                        <input type="text" id="routine-name-input" placeholder="Routine Name (e.g., Push Day A)" required>
+                        <div id="add-exercise-to-routine-controls">
+                            <p class="form-section-label">Add Exercises</p>
+                            <select id="routine-exercise-select"><option value="" disabled selected>Choose an exercise...</option></select>
+                            <div id="routine-track-type-toggle">
+                                <div id="reps-based-inputs">
+                                    <div class="inputs-grid">
+                                        <input type="number" id="routine-sets-input" placeholder="Sets" value="3">
+                                        <input type="text" id="routine-reps-input" placeholder="Reps (e.g., 8-12)">
+                                    </div>
+                                </div>
+                                <div id="time-based-inputs" class="hidden">
+                                     <div class="inputs-grid">
+                                        <input type="number" id="routine-time-sets-input" placeholder="Sets" value="3">
+                                        <input type="number" id="routine-duration-input" placeholder="Duration (sec)">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" id="add-exercise-to-builder-btn" class="btn-secondary" aria-label="Add Exercise to Routine">Add Exercise</button>
+                        </div>
+                        <div id="routine-builder-list"></div>
+                        <div class="form-actions"><button type="submit" id="save-routine-btn" class="btn-primary" disabled>Save Routine</button></div>
+                    </form>
+                </div>
+                <div id="saved-routines-container"><div class="section-header"><h2>My Routines</h2></div><div id="saved-routines-list" class="card"></div></div>
+            </main>
         </div>
 
         <!-- Page 3: Exercise List -->
         <div id="exercises-page" class="page">
-             <main><div class="card"><h3>Add/Edit Exercise</h3><form id="add-exercise-db-form"><input type="hidden" id="db-editing-id"><input type="text" id="db-exercise-name" placeholder="Exercise Name" required><select id="db-exercise-type" required><option value="" disabled selected>Choose type...</option><option value="Upper Body">Upper Body</option><option value="Lower Body">Lower Body</option><option value="Core">Core</option><option value="Full Body">Full Body</option></select><div class="file-input-container"><label for="db-exercise-image-input" class="btn-secondary">Choose Image</label><input type="file" id="db-exercise-image-input" accept="image/*,image/gif"><img id="db-exercise-thumbnail" class="hidden" alt="Exercise thumbnail preview"><button type="button" id="remove-db-image-btn" class="btn-danger hidden">Remove</button></div><button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button></form></div><div id="db-list-container"><div class="section-header"><h2 id="db-list-header">My Exercises</h2><div class="sort-container"><label for="db-sort-select">Sort by:</label><select id="db-sort-select"><option value="name-asc">Name (A-Z)</option><option value="name-desc">Name (Z-A)</option><option value="type-asc">Type</option></select></div></div><div id="db-exercise-list" class="card"></div></div></main>
+             <main>
+                <div class="card">
+                    <h3>Add/Edit Exercise</h3>
+                    <form id="add-exercise-db-form">
+                        <input type="hidden" id="db-editing-id">
+                        <input type="text" id="db-exercise-name" placeholder="Exercise Name" required>
+                        <div class="inputs-grid">
+                            <select id="db-exercise-type" required><option value="" disabled selected>Choose body part...</option><option value="Upper Body">Upper Body</option><option value="Lower Body">Lower Body</option><option value="Core">Core</option><option value="Full Body">Full Body</option></select>
+                            <select id="db-exercise-track-type" required><option value="reps" selected>Track by Reps</option><option value="time">Track by Time</option></select>
+                        </div>
+                        <div class="file-input-container">
+                            <label for="db-exercise-image-input" class="btn-secondary">Choose Image</label>
+                            <input type="file" id="db-exercise-image-input" accept="image/*,image/gif">
+                            <img id="db-exercise-thumbnail" class="hidden" alt="Exercise thumbnail preview">
+                            <button type="button" id="remove-db-image-btn" class="btn-danger hidden">Remove</button>
+                        </div>
+                        <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button>
+                    </form>
+                </div>
+                <div id="db-list-container">
+                    <div class="section-header"><h2 id="db-list-header">My Exercises</h2><div class="sort-container"><label for="db-sort-select">Sort by:</label><select id="db-sort-select"><option value="name-asc">Name (A-Z)</option><option value="name-desc">Name (Z-A)</option><option value="type-asc">Type</option></select></div></div>
+                    <div id="db-exercise-list" class="card"></div>
+                </div>
+             </main>
         </div>
     </div>
 
@@ -62,6 +110,21 @@
         <div class="modal-content countdown-content">
             <span id="countdown-timer-display">30</span>
             <small>Break Time</small>
+        </div>
+    </div>
+    <!-- ADDED: Stopwatch Modal -->
+    <div id="stopwatch-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content stopwatch-content">
+            <div class="stopwatch-header">
+                <h3 id="stopwatch-exercise-name">Exercise Name</h3>
+                <small>Set in Progress</small>
+            </div>
+            <div id="stopwatch-timer-display">00:00.00</div>
+            <div class="stopwatch-modal-controls">
+                <button id="stopwatch-action-btn" class="btn-danger">Stop</button>
+                <button id="stopwatch-cancel-btn" class="text-btn">Cancel</button>
+            </div>
         </div>
     </div>
 </body>
