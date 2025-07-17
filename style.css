@@ -90,17 +90,30 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .active-routine-exercise.finished { opacity: 0.5; }
 .exercise-content { flex-grow: 1; }
 .exercise-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.set-indicators { display: flex; gap: 8px; }
-.set-indicator { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--color-border); transition: background-color 0.3s ease; }
-.set-indicator.completed { background-color: var(--color-accent); border-color: var(--color-accent); }
-.exercise-actions { display: flex; gap: 12px; margin-top: 12px; }
-.exercise-actions .btn-primary { width: 100%; }
+.exercise-actions { margin-top: 12px; }
 .workout-summary-card { padding: 0; }
 .summary-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid var(--color-border); }
 .summary-header h2 { border: none; }
 .summary-exercise-list { padding: 16px; }
 .summary-exercise-item { padding: 8px 0; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; gap: 12px; }
 .summary-exercise-item:last-child { border-bottom: none; }
+/* --- NEW: Progress Button Styles --- */
+.progress-button {
+    background-color: var(--color-surface-raised); border: 1px solid var(--color-border);
+    position: relative; overflow: hidden;
+}
+.progress-button-fill {
+    position: absolute; top: 0; left: 0; height: 100%;
+    background-color: var(--color-primary);
+    transition: width 0.3s ease;
+}
+.progress-button-text {
+    position: relative; z-index: 1;
+    color: var(--color-text-primary);
+}
+.progress-button.finished .progress-button-text {
+    color: var(--color-text-on-primary);
+}
 /* 8. Footers */
 #tracker-footer { padding: 12px 16px; background-color: var(--color-surface); border-top: 1px solid var(--color-border); padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
 #date-nav { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
