@@ -116,7 +116,7 @@ function renderWorkoutPage() {
     if (workoutData.isComplete) {
         routineSelectionArea.classList.add('hidden');
         activeRoutineInfo.classList.add('hidden');
-        let summaryHTML = `<div class="card workout-summary-card"><div class="summary-header"><div><h2>${workoutData.routine.name} - Summary</h2>${workoutData.completionTime ? `<small class="summary-total-time">Total Time: ${formatTotalTime(workoutData.completionTime)}</small>` : ''}</div><button class="btn-primary" id="start-new-workout-btn">Start New Workout</button></div>`;
+        let summaryHTML = `<div class="card workout-summary-card"><div class="summary-header"><div><h2>${workoutData.routine.name} - Summary</h2>${workoutData.completionTime ? `<div class="summary-total-time">${formatTotalTime(workoutData.completionTime)}</div>` : ''}</div><button class="btn-primary" id="start-new-workout-btn">Start New Workout</button></div>`;
 
         workoutData.routine.exercises.forEach(exercise => {
             const progress = workoutData.progress.find(p => p.instanceId === exercise.instanceId);
@@ -143,7 +143,6 @@ function renderWorkoutPage() {
 
             summaryHTML += `<div class="summary-exercise-card">
                 <div class="summary-exercise-header">
-                    ${exercise.image ? `<img src="${exercise.image}" class="db-item-thumbnail">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
                     <div class="exercise-item-main">
                         <span class="exercise-item-name">${exercise.name}</span>
                         <small class="exercise-item-stats">${stats}</small>
@@ -369,16 +368,13 @@ activeRoutineDisplay.addEventListener('click', e => {
     const t = e.target;
     if (t.id === 'start-new-workout-btn') { if (confirm("This will clear today's completed log. Are you sure you want to start a new workout?")) { delete allData.history[getFormattedDate(currentDate)]; saveDataToLocalStorage(); renderWorkoutPage(); } return; }
     
-    // --- Save Summary Changes ---
     if (t.id === 'save-summary-changes-btn') {
         const dateKey = getFormattedDate(currentDate);
         const workoutData = allData.history[dateKey];
         
-        // Save Notes
         const notesInput = document.getElementById('workout-notes-input');
         workoutData.notes = notesInput.value;
 
-        // Save Reps and Weight
         document.querySelectorAll('.summary-reps-input').forEach(input => {
             const instanceId = parseFloat(input.dataset.instanceId);
             const setIndex = parseInt(input.dataset.setIndex);
@@ -411,7 +407,6 @@ activeRoutineDisplay.addEventListener('click', e => {
         const progress = workoutData.progress.find(p => p.instanceId === instanceId);
         const exerciseData = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId);
         
-        // Push a new object to loggedData for reps tracking
         if (!progress.loggedData) progress.loggedData = [];
         progress.loggedData.push({ reps: exerciseData.reps, weight: '' });
         progress.setsCompleted++;
