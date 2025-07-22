@@ -30,7 +30,7 @@ const stopwatchModal = document.getElementById('stopwatch-modal'), stopwatchExer
 const countdownModal = document.getElementById('countdown-modal'), countdownTimerDisplay = document.getElementById('countdown-timer-display'), countdownLabel = document.getElementById('countdown-label'), countdownNextExerciseInfo = document.getElementById('countdown-next-exercise-info'), countdownNextExerciseName = document.getElementById('countdown-next-exercise-name'), countdownNextExerciseDetails = document.getElementById('countdown-next-exercise-details'), countdownProgressCircle = document.querySelector('.timer-progress');
 const workoutCompleteModal = document.getElementById('workout-complete-modal'), workoutTotalTimeDisplay = document.getElementById('workout-total-time'), closeCompleteModalBtn = document.getElementById('close-complete-modal-btn');
 
-const circleCircumference = 2 * Math.PI * 54;
+const circleCircumference = 2 * Math.PI * 54; // 2 * PI * radius (r=54 from SVG)
 
 // --- 2. CORE LOGIC & HELPER FUNCTIONS ---
 function showPage(pageId) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); document.getElementById(pageId).classList.add('active'); document.getElementById(`nav-${pageId.split('-')[0]}`).classList.add('active'); closeStopwatchModal(true); renderCurrentPage(); }
@@ -46,6 +46,7 @@ function compressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.7) { r
 function startCountdown(duration, nextExercise = null) {
     clearInterval(countdownIntervalId);
     countdownInitialDuration = duration;
+
     countdownProgressCircle.style.transition = 'none';
     countdownProgressCircle.style.strokeDasharray = circleCircumference;
     countdownProgressCircle.style.strokeDashoffset = 0;
@@ -70,6 +71,7 @@ function startCountdown(duration, nextExercise = null) {
         remaining--;
         const progress = Math.max(0, remaining / countdownInitialDuration);
         countdownProgressCircle.style.strokeDashoffset = circleCircumference * (1 - progress);
+
         if (remaining >= 0) {
             countdownTimerDisplay.textContent = remaining;
         } else {
@@ -86,11 +88,12 @@ function formatTotalTime(ms) {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
+    
     let parts = [];
     if (hours > 0) parts.push(`${hours}h`);
     if (minutes > 0) parts.push(`${minutes}m`);
     if (seconds >= 0 && parts.length < 2) parts.push(`${seconds}s`);
-    if (parts.length === 0) return '0s';
+    if(parts.length === 0) return '0s';
     return parts.join(' ');
 }
 
@@ -102,59 +105,28 @@ function renderExerciseDatabase() { dbExerciseListDiv.innerHTML = ''; if (allDat
 function populateExerciseDropdown() { routineExerciseSelect.innerHTML = `<option value="" disabled selected>Choose an exercise...</option>`; allData.exerciseDatabase.forEach(ex => { const o = document.createElement('option'); o.value = ex.id; o.textContent = ex.name; routineExerciseSelect.appendChild(o); }); }
 function populateDailyRoutineDropdown() { dailyRoutineSelect.innerHTML = `<option value="" disabled selected>Select a routine to begin...</option>`; allData.routines.forEach(r => { const o = document.createElement('option'); o.value = r.id; o.textContent = r.name; dailyRoutineSelect.appendChild(o); }); }
 function renderSavedRoutines() { savedRoutinesList.innerHTML = ''; if (allData.routines.length === 0) { savedRoutinesList.innerHTML = `<div class="db-exercise-item" style="justify-content: center; color: var(--color-text-tertiary);">You haven't created any routines yet.</div>`; return; } allData.routines.forEach(r => { const i = document.createElement('div'); i.className = 'db-exercise-item'; const sets = r.exercises.reduce((s, ex) => s + parseInt(ex.sets), 0); i.innerHTML = `<div class="exercise-item-main"><span class="exercise-item-name">${r.name}</span><small class="exercise-item-stats">${r.exercises.length} exercises • ${sets} total sets</small></div><div class="item-actions"><button class="item-action-btn edit-btn" data-id="${r.id}">Edit</button><button class="item-action-btn delete-btn" data-id="${r.id}">Delete</button></div>`; savedRoutinesList.appendChild(i); }); }
-
 function renderWorkoutPage() {
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
-    if (!workoutData) {
-        routineSelectionArea.classList.remove('hidden');
-        activeRoutineInfo.classList.add('hidden');
-        activeRoutineDisplay.innerHTML = `<div class="placeholder-card">Select a routine and click "Start" to see your exercises.</div>`;
-        return;
-    }
+    if (!workoutData) { routineSelectionArea.classList.remove('hidden'); activeRoutineInfo.classList.add('hidden'); activeRoutineDisplay.innerHTML = `<div class="placeholder-card">Select a routine and click "Start" to see your exercises.</div>`; return; }
 
     if (workoutData.isComplete) {
         routineSelectionArea.classList.add('hidden');
         activeRoutineInfo.classList.add('hidden');
-        let summaryHTML = `<div class="card workout-summary-card"><div class="summary-header"><div><h2>${workoutData.routine.name} - Summary</h2>${workoutData.completionTime ? `<small class="summary-total-time">Total Time: ${formatTotalTime(workoutData.completionTime)}</small>` : ''}</div><button class="btn-primary" id="start-new-workout-btn">Start New Workout</button></div>`;
+        let summaryHTML = `<div class="card workout-summary-card"><div class="summary-header"><div><h2>${workoutData.routine.name} - Completed!</h2>${workoutData.completionTime ? `<small class="summary-total-time">Total Time: ${formatTotalTime(workoutData.completionTime)}</small>` : ''}</div><button class="btn-primary" id="start-new-workout-btn">Start New Workout</button></div><div class="summary-exercise-list">`;
 
         workoutData.routine.exercises.forEach(exercise => {
             const progress = workoutData.progress.find(p => p.instanceId === exercise.instanceId);
+            if (!progress.loggedData) progress.loggedData = [];
             const stats = exercise.trackType === 'time' ? `${exercise.sets} sets × ${exercise.duration} sec` : `${exercise.sets} sets × ${exercise.reps} reps`;
-            let setsHTML = '';
-
-            if (exercise.trackType === 'reps') {
-                for (let i = 0; i < progress.loggedData.length; i++) {
-                    const setData = progress.loggedData[i];
-                    setsHTML += `<div class="summary-set-item">
-                        <span class="set-label">Set ${i + 1}</span>
-                        <input type="text" class="summary-reps-input" value="${setData.reps}" data-instance-id="${progress.instanceId}" data-set-index="${i}">
-                        <input type="number" class="summary-weight-input" placeholder="Weight" value="${setData.weight || ''}" data-instance-id="${progress.instanceId}" data-set-index="${i}">
-                    </div>`;
-                }
-            } else { // Time-based
-                progress.loggedData.forEach((time, index) => {
-                    setsHTML += `<div class="summary-set-item">
-                        <span class="set-label">Set ${index + 1}</span>
-                        <span class="summary-logged-time">${formatStopwatchTime(time)}</span>
-                    </div>`;
-                });
+            let loggedDataHTML = '';
+            if (exercise.trackType === 'time' && progress.loggedData.length > 0) {
+                const loggedItems = progress.loggedData.map((time, index) => `<li class="logged-time-item">Set ${index + 1}: ${formatStopwatchTime(time)}</li>`).join('');
+                loggedDataHTML = `<ul class="summary-logged-times">${loggedItems}</ul>`;
             }
-
-            summaryHTML += `<div class="summary-exercise-card">
-                <div class="summary-exercise-header">
-                    ${exercise.image ? `<img src="${exercise.image}" class="db-item-thumbnail">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
-                    <div class="exercise-item-main">
-                        <span class="exercise-item-name">${exercise.name}</span>
-                        <small class="exercise-item-stats">${stats}</small>
-                    </div>
-                </div>
-                <div class="summary-sets-list">${setsHTML}</div>
-            </div>`;
+            summaryHTML += `<div class="summary-exercise-item"><div><span class="exercise-item-name">${exercise.name}</span><small class="exercise-item-stats">${stats}</small></div>${loggedDataHTML}</div>`;
         });
-        
-        summaryHTML += `<div class="summary-notes-section"><h3>Workout Notes</h3><textarea id="workout-notes-input" placeholder="How was the workout? Any PRs?">${workoutData.notes || ''}</textarea></div>`;
-        summaryHTML += `<div class="summary-actions"><button class="btn-primary" id="save-summary-changes-btn">Save Changes</button></div></div>`;
+        summaryHTML += `</div></div>`;
         activeRoutineDisplay.innerHTML = summaryHTML;
         return;
     }
@@ -191,6 +163,7 @@ function renderWorkoutPage() {
     });
 }
 
+
 // --- 4. EVENT HANDLER & WORKFLOW FUNCTIONS ---
 function handleAddOrUpdateDbEntry(event) { event.preventDefault(); const name = dbExerciseNameInput.value.trim(), type = dbExerciseTypeSelect.value, trackType = dbExerciseTrackType.value; if (dbEditingState.isEditing) { const ex = allData.exerciseDatabase.find(e => e.id === dbEditingState.id); if (ex) { ex.name = name; ex.type = type; ex.image = currentExerciseImage; ex.trackType = trackType; } } else { const newEx = { id: Date.now(), name, type, image: currentExerciseImage, trackType }; allData.exerciseDatabase.push(newEx); } saveDataToLocalStorage(); renderExerciseDatabase(); resetDbForm(); }
 function handleRoutineExerciseChange() { const selectedId = parseInt(routineExerciseSelect.value); const exercise = allData.exerciseDatabase.find(ex => ex.id === selectedId); if (!exercise) { repsBasedInputs.classList.add('hidden'); timeBasedInputs.classList.add('hidden'); return; } if (exercise.trackType === 'time') { repsBasedInputs.classList.add('hidden'); timeBasedInputs.classList.remove('hidden'); } else { repsBasedInputs.classList.remove('hidden'); timeBasedInputs.classList.add('hidden'); } }
@@ -223,6 +196,7 @@ function completeWorkout(isAutoFinish = false) {
     }
 }
 
+// --- CORRECTED/REFACTORED SET COMPLETION LOGIC ---
 function handleSetCompletion(instanceId) {
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
@@ -232,7 +206,7 @@ function handleSetCompletion(instanceId) {
     const progress = workoutData.progress.find(p => p.instanceId === instanceId);
 
     saveDataToLocalStorage();
-    renderWorkoutPage();
+    renderWorkoutPage(); // RENDER FIRST to show the immediate progress update.
 
     const isExerciseComplete = progress.setsCompleted >= exerciseData.sets;
     const currentIndex = workoutData.routine.exercises.findIndex(ex => ex.instanceId === instanceId);
@@ -240,7 +214,7 @@ function handleSetCompletion(instanceId) {
 
     if (isExerciseComplete) {
         if (isLastExerciseInRoutine) {
-            setTimeout(() => completeWorkout(true), 250);
+            setTimeout(() => completeWorkout(true), 250); // Use a small delay for user to see the "finished" state.
         } else {
             const nextExercise = workoutData.routine.exercises[currentIndex + 1];
             startCountdown(60, nextExercise);
@@ -295,7 +269,7 @@ function logStopwatchSet() {
     if (!progress.loggedData) progress.loggedData = [];
     progress.loggedData.push(progress.stopwatch.elapsedTime);
     
-    const instanceIdToComplete = currentStopwatchInstanceId;
+    const instanceIdToComplete = currentStopwatchInstanceId; // Store before closing
     closeStopwatchModal();
     handleSetCompletion(instanceIdToComplete);
 }
@@ -339,7 +313,7 @@ startRoutineBtn.addEventListener('click', () => {
         const hydratedExercises = sourceRoutine.exercises.map(leanEx => { const fullEx = allData.exerciseDatabase.find(dbEx => dbEx.id === leanEx.exerciseId); return { ...fullEx, ...leanEx, instanceId: Date.now() + Math.random() }; });
         const progress = hydratedExercises.map(ex => ({ instanceId: ex.instanceId, setsCompleted: 0, loggedData: [], timer: { enabled: true, duration: 30 }, stopwatch: { elapsedTime: 0, isRunning: false, startTime: 0 } }));
         const workoutToLog = { name: sourceRoutine.name, id: sourceRoutine.id, exercises: hydratedExercises };
-        allData.history[dateKey] = { routine: workoutToLog, progress, isComplete: false, startTime: Date.now(), completionTime: null, notes: '' };
+        allData.history[dateKey] = { routine: workoutToLog, progress, isComplete: false, startTime: Date.now(), completionTime: null };
         saveDataToLocalStorage();
         renderWorkoutPage();
     }
@@ -368,54 +342,12 @@ activeRoutineInfo.addEventListener('click', e => {
 activeRoutineDisplay.addEventListener('click', e => {
     const t = e.target;
     if (t.id === 'start-new-workout-btn') { if (confirm("This will clear today's completed log. Are you sure you want to start a new workout?")) { delete allData.history[getFormattedDate(currentDate)]; saveDataToLocalStorage(); renderWorkoutPage(); } return; }
-    
-    // --- Save Summary Changes ---
-    if (t.id === 'save-summary-changes-btn') {
-        const dateKey = getFormattedDate(currentDate);
-        const workoutData = allData.history[dateKey];
-        
-        // Save Notes
-        const notesInput = document.getElementById('workout-notes-input');
-        workoutData.notes = notesInput.value;
-
-        // Save Reps and Weight
-        document.querySelectorAll('.summary-reps-input').forEach(input => {
-            const instanceId = parseFloat(input.dataset.instanceId);
-            const setIndex = parseInt(input.dataset.setIndex);
-            const progress = workoutData.progress.find(p => p.instanceId === instanceId);
-            if (progress && progress.loggedData[setIndex]) {
-                progress.loggedData[setIndex].reps = input.value;
-            }
-        });
-        document.querySelectorAll('.summary-weight-input').forEach(input => {
-            const instanceId = parseFloat(input.dataset.instanceId);
-            const setIndex = parseInt(input.dataset.setIndex);
-            const progress = workoutData.progress.find(p => p.instanceId === instanceId);
-            if (progress && progress.loggedData[setIndex]) {
-                progress.loggedData[setIndex].weight = input.value;
-            }
-        });
-        
-        saveDataToLocalStorage();
-        t.textContent = 'Saved!';
-        setTimeout(() => { t.textContent = 'Save Changes'; }, 1500);
-        return;
-    }
-
     const card = t.closest('.active-routine-exercise');
     if (!card) return;
     const instanceId = parseFloat(card.dataset.instanceId);
     if (t.matches('.start-reps-set-btn')) {
-        const dateKey = getFormattedDate(currentDate);
-        const workoutData = allData.history[dateKey];
-        const progress = workoutData.progress.find(p => p.instanceId === instanceId);
-        const exerciseData = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId);
-        
-        // Push a new object to loggedData for reps tracking
-        if (!progress.loggedData) progress.loggedData = [];
-        progress.loggedData.push({ reps: exerciseData.reps, weight: '' });
+        const progress = allData.history[getFormattedDate(currentDate)].progress.find(p => p.instanceId === instanceId);
         progress.setsCompleted++;
-
         handleSetCompletion(instanceId);
     } else if (t.matches('.start-stopwatch-modal-btn')) {
         openStopwatchModal(instanceId);
