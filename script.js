@@ -174,7 +174,21 @@ function populateDailyRoutineDropdown() {
         dailyRoutineSelect.appendChild(o);
     });
 }
-function renderSavedRoutines() { savedRoutinesList.innerHTML = ''; if (allData.routines.length === 0) { savedRoutinesList.innerHTML = `<div class="db-exercise-item" style="justify-content: center; color: var(--color-text-tertiary);">You haven't created any routines yet.</div>`; return; } allData.routines.forEach(r => { const i = document.createElement('div'); i.className = 'db-exercise-item'; const sets = r.exercises.reduce((s, ex) => s + parseInt(ex.sets), 0); i.innerHTML = `<div class="exercise-item-main"><span class="exercise-item-name">${r.name}</span><small class="exercise-item-stats">${r.exercises.length} exercises • ${sets} total sets</small></div><div class="item-actions"><button class="item-action-btn edit-btn" data-id="${r.id}">Edit</button><button class="item-action-btn delete-btn" data-id="${r.id}">Delete</button></div>`; savedRoutinesList.appendChild(i); }); }
+function renderSavedRoutines() {
+    savedRoutinesList.innerHTML = '';
+    if (allData.routines.length === 0) {
+        savedRoutinesList.innerHTML = `<div class="db-exercise-item" style="justify-content: center; color: var(--color-text-tertiary);">You haven't created any routines yet.</div>`;
+        return;
+    }
+    const sortedRoutines = [...allData.routines].sort((a, b) => a.name.localeCompare(b.name));
+    sortedRoutines.forEach(r => {
+        const i = document.createElement('div');
+        i.className = 'db-exercise-item';
+        const sets = r.exercises.reduce((s, ex) => s + parseInt(ex.sets), 0);
+        i.innerHTML = `<div class="exercise-item-main"><span class="exercise-item-name">${r.name}</span><small class="exercise-item-stats">${r.exercises.length} exercises • ${sets} total sets</small></div><div class="item-actions"><button class="item-action-btn edit-btn" data-id="${r.id}">Edit</button><button class="item-action-btn delete-btn" data-id="${r.id}">Delete</button></div>`;
+        savedRoutinesList.appendChild(i);
+    });
+}
 
 function renderWorkoutPage() {
     const dateKey = getFormattedDate(currentDate);
