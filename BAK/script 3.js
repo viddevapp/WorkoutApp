@@ -2,7 +2,6 @@
 let currentDate = new Date(), currentExerciseImage = null;
 let dbEditingState = { isEditing: false, id: null };
 let routineEditingState = { isEditing: false, id: null };
-let currentDbSort = 'name-asc';
 let routineBuilderState = { exercises: [] };
 let countdownIntervalId = null;
 let countdownInitialDuration = 0;
@@ -19,7 +18,7 @@ let allData = {
 // --- REFERENCES TO HTML ELEMENTS ---
 const navWorkout = document.getElementById('nav-workout'), navRoutines = document.getElementById('nav-routines'), navExercises = document.getElementById('nav-exercises');
 const workoutPage = document.getElementById('workout-page'), routinesPage = document.getElementById('routines-page'), exercisesPage = document.getElementById('exercises-page');
-const addExerciseDbForm = document.getElementById('add-exercise-db-form'), dbEditingIdInput = document.getElementById('db-editing-id'), dbExerciseNameInput = document.getElementById('db-exercise-name'), dbExerciseTypeSelect = document.getElementById('db-exercise-type'), dbExerciseTrackType = document.getElementById('db-exercise-track-type'), dbExerciseImageInput = document.getElementById('db-exercise-image-input'), dbExerciseThumbnail = document.getElementById('db-exercise-thumbnail'), removeDbImageBtn = document.getElementById('remove-db-image-btn'), dbSubmitBtn = document.getElementById('db-submit-btn'), dbExerciseListDiv = document.getElementById('db-exercise-list'), dbSortSelect = document.getElementById('db-sort-select');
+const addExerciseDbForm = document.getElementById('add-exercise-db-form'), dbEditingIdInput = document.getElementById('db-editing-id'), dbExerciseNameInput = document.getElementById('db-exercise-name'), dbExerciseTypeSelect = document.getElementById('db-exercise-type'), dbExerciseTrackType = document.getElementById('db-exercise-track-type'), dbExerciseImageInput = document.getElementById('db-exercise-image-input'), dbExerciseThumbnail = document.getElementById('db-exercise-thumbnail'), removeDbImageBtn = document.getElementById('remove-db-image-btn'), dbSubmitBtn = document.getElementById('db-submit-btn'), dbExerciseListDiv = document.getElementById('db-exercise-list');
 const createRoutineForm = document.getElementById('create-routine-form'), routineEditingIdInput = document.getElementById('routine-editing-id'), routineNameInput = document.getElementById('routine-name-input'), routineExerciseSelect = document.getElementById('routine-exercise-select'), routineSetsInput = document.getElementById('routine-sets-input'), routineRepsInput = document.getElementById('routine-reps-input'), addExerciseToBuilderBtn = document.getElementById('add-exercise-to-builder-btn'), routineBuilderList = document.getElementById('routine-builder-list'), saveRoutineBtn = document.getElementById('save-routine-btn'), savedRoutinesList = document.getElementById('saved-routines-list');
 const routineTrackTypeToggle = document.getElementById('routine-track-type-toggle'), repsBasedInputs = document.getElementById('reps-based-inputs'), timeBasedInputs = document.getElementById('time-based-inputs'), routineTimeSetsInput = document.getElementById('routine-time-sets-input'), routineDurationInput = document.getElementById('routine-duration-input');
 const dailyRoutineSelect = document.getElementById('daily-routine-select'), startRoutineBtn = document.getElementById('start-routine-btn'), activeRoutineDisplay = document.getElementById('active-routine-display'), routineSelectionArea = document.getElementById('routine-selection-area'), activeRoutineInfo = document.getElementById('active-routine-info'), activeRoutineName = document.getElementById('active-routine-name');
@@ -98,10 +97,98 @@ function formatTotalTime(ms) {
 // --- 3. RENDERING FUNCTIONS ---
 function renderCurrentPage() { const id = document.querySelector('.page.active').id; if (id === 'exercises-page') renderExerciseDatabase(); if (id === 'routines-page') { populateExerciseDropdown(); renderSavedRoutines(); handleRoutineExerciseChange(); } if (id === 'workout-page') { populateDailyRoutineDropdown(); renderWorkoutPage(); } renderDateControls(); }
 function renderDateControls() { const today = new Date(); today.setHours(0, 0, 0, 0); currentDate.setHours(0, 0, 0, 0); const isToday = currentDate.getTime() === today.getTime(); dateDisplayBtn.textContent = isToday ? 'Today' : currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); nextDayBtn.disabled = currentDate >= today; }
-function renderExerciseDatabase() { dbExerciseListDiv.innerHTML = ''; if (allData.exerciseDatabase.length === 0) { dbExerciseListDiv.innerHTML = `<div class="db-exercise-item" style="justify-content: center; color: var(--color-text-tertiary);">Your exercise list is empty.</div>`; return; } const sortedDb = [...allData.exerciseDatabase]; switch (currentDbSort) { case 'name-desc': sortedDb.sort((a, b) => b.name.localeCompare(a.name)); break; case 'type-asc': sortedDb.sort((a, b) => a.type.localeCompare(b.type)); break; default: sortedDb.sort((a, b) => a.name.localeCompare(a.name)); break; } sortedDb.forEach(ex => { const i = document.createElement('div'); i.className = 'db-exercise-item'; i.innerHTML = `${ex.image ? `<img src="${ex.image}" alt="${ex.name}" class="db-item-thumbnail" data-id="${ex.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}<div class="exercise-item-main"><span class="exercise-item-name">${ex.name}</span><small class="exercise-item-stats">${ex.type} • ${ex.trackType || 'reps'}</small></div><div class="item-actions"><button class="item-action-btn edit-btn" data-id="${ex.id}">Edit</button><button class="item-action-btn delete-btn" data-id="${ex.id}">Delete</button></div>`; dbExerciseListDiv.appendChild(i); }); }
-function populateExerciseDropdown() { routineExerciseSelect.innerHTML = `<option value="" disabled selected>Choose an exercise...</option>`; allData.exerciseDatabase.forEach(ex => { const o = document.createElement('option'); o.value = ex.id; o.textContent = ex.name; routineExerciseSelect.appendChild(o); }); }
-function populateDailyRoutineDropdown() { dailyRoutineSelect.innerHTML = `<option value="" disabled selected>Select a routine to begin...</option>`; allData.routines.forEach(r => { const o = document.createElement('option'); o.value = r.id; o.textContent = r.name; dailyRoutineSelect.appendChild(o); }); }
-function renderSavedRoutines() { savedRoutinesList.innerHTML = ''; if (allData.routines.length === 0) { savedRoutinesList.innerHTML = `<div class="db-exercise-item" style="justify-content: center; color: var(--color-text-tertiary);">You haven't created any routines yet.</div>`; return; } allData.routines.forEach(r => { const i = document.createElement('div'); i.className = 'db-exercise-item'; const sets = r.exercises.reduce((s, ex) => s + parseInt(ex.sets), 0); i.innerHTML = `<div class="exercise-item-main"><span class="exercise-item-name">${r.name}</span><small class="exercise-item-stats">${r.exercises.length} exercises • ${sets} total sets</small></div><div class="item-actions"><button class="item-action-btn edit-btn" data-id="${r.id}">Edit</button><button class="item-action-btn delete-btn" data-id="${r.id}">Delete</button></div>`; savedRoutinesList.appendChild(i); }); }
+function renderExerciseDatabase() {
+    dbExerciseListDiv.innerHTML = '';
+    if (allData.exerciseDatabase.length === 0) {
+        dbExerciseListDiv.innerHTML = `<div class="placeholder-card">Your exercise list is empty. Add one above to get started.</div>`;
+        return;
+    }
+
+    const exercisesByType = allData.exerciseDatabase.reduce((acc, ex) => {
+        const type = ex.type || 'Uncategorized';
+        if (!acc[type]) acc[type] = [];
+        acc[type].push(ex);
+        return acc;
+    }, {});
+
+    Object.keys(exercisesByType).sort().forEach(type => {
+        const groupCard = document.createElement('div');
+        groupCard.className = 'card';
+        groupCard.style.padding = '0';
+        groupCard.style.overflow = 'hidden';
+
+        const header = document.createElement('h3');
+        header.textContent = type;
+        header.style.padding = '12px 16px';
+        header.style.margin = '0';
+        header.style.borderBottom = '1px solid var(--color-border)';
+        header.style.textAlign = 'left';
+        groupCard.appendChild(header);
+
+        const sortedDb = exercisesByType[type].sort((a, b) => a.name.localeCompare(b.name));
+
+        sortedDb.forEach(ex => {
+            const i = document.createElement('div');
+            i.className = 'db-exercise-item';
+            i.innerHTML = `${ex.image ? `<img src="${ex.image}" alt="${ex.name}" class="db-item-thumbnail" data-id="${ex.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}<div class="exercise-item-main"><span class="exercise-item-name">${ex.name}</span><small class="exercise-item-stats">${ex.type} • ${ex.trackType || 'reps'}</small></div><div class="item-actions"><button class="item-action-btn edit-btn" data-id="${ex.id}">Edit</button><button class="item-action-btn delete-btn" data-id="${ex.id}">Delete</button></div>`;
+            groupCard.appendChild(i);
+        });
+
+        dbExerciseListDiv.appendChild(groupCard);
+    });
+}
+function populateExerciseDropdown() {
+    routineExerciseSelect.innerHTML = `<option value="" disabled selected>Choose an exercise...</option>`;
+    
+    const exercisesByType = allData.exerciseDatabase.reduce((acc, ex) => {
+        const type = ex.type || 'Uncategorized';
+        if (!acc[type]) {
+            acc[type] = [];
+        }
+        acc[type].push(ex);
+        return acc;
+    }, {});
+
+    Object.keys(exercisesByType).sort().forEach(type => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = type;
+        
+        const sortedExercises = exercisesByType[type].sort((a, b) => a.name.localeCompare(b.name));
+        
+        sortedExercises.forEach(ex => {
+            const o = document.createElement('option');
+            o.value = ex.id;
+            o.textContent = ex.name;
+            optgroup.appendChild(o);
+        });
+        routineExerciseSelect.appendChild(optgroup);
+    });
+}
+function populateDailyRoutineDropdown() {
+    dailyRoutineSelect.innerHTML = `<option value="" disabled selected>Select a routine to begin...</option>`;
+    const sortedRoutines = [...allData.routines].sort((a, b) => a.name.localeCompare(b.name));
+    sortedRoutines.forEach(r => {
+        const o = document.createElement('option');
+        o.value = r.id;
+        o.textContent = r.name;
+        dailyRoutineSelect.appendChild(o);
+    });
+}
+function renderSavedRoutines() {
+    savedRoutinesList.innerHTML = '';
+    if (allData.routines.length === 0) {
+        savedRoutinesList.innerHTML = `<div class="db-exercise-item" style="justify-content: center; color: var(--color-text-tertiary);">You haven't created any routines yet.</div>`;
+        return;
+    }
+    const sortedRoutines = [...allData.routines].sort((a, b) => a.name.localeCompare(b.name));
+    sortedRoutines.forEach(r => {
+        const i = document.createElement('div');
+        i.className = 'db-exercise-item';
+        const sets = r.exercises.reduce((s, ex) => s + parseInt(ex.sets), 0);
+        i.innerHTML = `<div class="exercise-item-main"><span class="exercise-item-name">${r.name}</span><small class="exercise-item-stats">${r.exercises.length} exercises • ${sets} total sets</small></div><div class="item-actions"><button class="item-action-btn edit-btn" data-id="${r.id}">Edit</button><button class="item-action-btn delete-btn" data-id="${r.id}">Delete</button></div>`;
+        savedRoutinesList.appendChild(i);
+    });
+}
 
 function renderWorkoutPage() {
     const dateKey = getFormattedDate(currentDate);
@@ -316,7 +403,6 @@ navRoutines.addEventListener('click', () => showPage('routines-page'));
 navExercises.addEventListener('click', () => showPage('exercises-page'));
 addExerciseDbForm.addEventListener('submit', handleAddOrUpdateDbEntry);
 addExerciseDbForm.addEventListener('input', validateDbForm);
-dbSortSelect.addEventListener('change', e => { currentDbSort = e.target.value; renderExerciseDatabase(); });
 dbExerciseImageInput.addEventListener('change', async (event) => { const file = event.target.files[0]; if (file) { try { const compressedDataUrl = await compressImage(file); currentExerciseImage = compressedDataUrl; dbExerciseThumbnail.src = compressedDataUrl; dbExerciseThumbnail.classList.remove('hidden'); removeDbImageBtn.classList.remove('hidden'); } catch (error) { console.error("Image compression failed:", error); alert("Could not process image."); } } });
 removeDbImageBtn.addEventListener('click', () => { currentExerciseImage = null; dbExerciseImageInput.value = ''; dbExerciseThumbnail.classList.add('hidden'); removeDbImageBtn.classList.add('hidden'); });
 dbExerciseThumbnail.addEventListener('click', () => { if (dbExerciseThumbnail.src) { fullSizeImage.src = dbExerciseThumbnail.src; openModal(imageViewerModal); } });

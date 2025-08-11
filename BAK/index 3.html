@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workout Tracker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js" defer></script>
 </head>
 <body>
@@ -151,21 +151,6 @@
                 <span id="workout-total-time"></span>
             </div>
             <button id="close-complete-modal-btn" class="btn-primary">View Summary</button>
-        </div>
-    </div>
-
-    <div id="swap-exercise-modal" class="modal hidden">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <h3>Swap Exercise</h3>
-            <form id="swap-exercise-form">
-                <p style="margin-bottom: 12px; color: var(--color-text-secondary); font-size: 14px;">Choose a new exercise to replace the current one. The sets and reps/duration will be preserved.</p>
-                <select id="swap-exercise-select" required><option value="" disabled selected>Choose replacement...</option></select>
-                <div class="form-actions" style="display: flex; gap: 12px; margin-top: 16px;">
-                    <button type="button" id="cancel-swap-btn" class="btn-secondary">Cancel</button>
-                    <button type="submit" class="btn-primary">Confirm Swap</button>
-                </div>
-            </form>
         </div>
     </div>
 </body>
