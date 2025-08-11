@@ -139,13 +139,14 @@ function renderExerciseDatabase() {
 
     Object.keys(exercisesByType).sort().forEach(type => {
         const groupCard = document.createElement('div');
-        groupCard.className = 'card';
+        groupCard.className = 'card exercise-group-card';
+        
         const header = document.createElement('h3');
         header.textContent = type;
-        header.style.padding = '12px 16px 0';
-        header.style.margin = '0';
-        header.style.textAlign = 'left';
         groupCard.appendChild(header);
+        
+        const listContainer = document.createElement('div');
+        listContainer.className = 'exercise-group-list';
 
         const sortedDb = exercisesByType[type].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -157,7 +158,7 @@ function renderExerciseDatabase() {
                     ${ex.image ? `<img src="${ex.image}" alt="${ex.name}" class="db-item-thumbnail" data-id="${ex.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
                     <div class="exercise-item-main">
                         <span class="exercise-item-name">${ex.name}</span>
-                        <small class="exercise-item-stats">${ex.type} • ${ex.trackType || 'reps'}</small>
+                        <small class="exercise-item-stats">${ex.trackType || 'reps'}</small>
                     </div>
                 </div>
                 <div class="swipe-actions">
@@ -166,12 +167,13 @@ function renderExerciseDatabase() {
                         <span>Edit</span>
                     </button>
                     <button class="swipe-action-btn swipe-delete-btn" data-id="${ex.id}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M6 2a2 2 0 0 0-2 2v1H2.5a.5.5 0 0 0 0 1h1V15a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V6h1a.5.5 0 0 0 0-1H14V4a2 2 0 0 0-2-2H6zm1 2h4v1H7V4zM5 6h8v9H5V6z"/></svg>
+                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M6 2a2 2 0 0 0-2 2v1H2.5a.5.5 0 0 0 0 1h1V15a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V6h1a.5.5 0 0 0 0-1H14V4a2 2 0 0 0-2-2H6zm1 2h4v1H7V4zM5 6h8v9H5V6z"/></svg>
                         <span>Delete</span>
                     </button>
                 </div>`;
-            groupCard.appendChild(itemDiv);
+            listContainer.appendChild(itemDiv);
         });
+        groupCard.appendChild(listContainer);
         dbExerciseListDiv.appendChild(groupCard);
     });
 }
@@ -230,7 +232,7 @@ function renderSavedRoutines() {
         const sets = r.exercises.reduce((s, ex) => s + parseInt(ex.sets), 0);
         itemDiv.innerHTML = `
             <div class="swipe-content">
-                <div class="exercise-item-main">
+                <div class="exercise-item-main" style="text-align:center;">
                     <span class="exercise-item-name">${r.name}</span>
                     <small class="exercise-item-stats">${r.exercises.length} exercises • ${sets} total sets</small>
                 </div>
@@ -340,7 +342,7 @@ function renderWorkoutPage() {
                     ${exercise.image ? `<img src="${exercise.image}" alt="${exercise.name}" class="db-item-thumbnail" data-id="${exercise.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
                     <div class="exercise-content">
                         <div class="exercise-header">
-                            <div class="exercise-item-main" style="text-align:left; padding: 0 12px;">
+                            <div class="exercise-item-main">
                                 <span class="exercise-item-name">${exercise.name}</span>
                                 <small class="exercise-item-stats">${stats}</small>
                             </div>
@@ -378,9 +380,18 @@ function renderWorkoutPage() {
 }
 
 // --- 4. SORTABLE & DRAG/DROP ---
-function initRoutineBuilderSortable() { if (routineBuilderSortable) routineBuilderSortable.destroy(); routineBuilderSortable = new Sortable(routineBuilderList, { animation: 150, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); } }); }
-function initDailyWorkoutSortable() { if (dailyWorkoutSortable) dailyWorkoutSortable.destroy(); const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; if (!workoutData) return; dailyWorkoutSortable = new Sortable(activeRoutineDisplay, { handle: '.swipe-content', animation: 150, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', onEnd: (evt) => { const movedItem = workoutData.routine.exercises.splice(evt.oldIndex, 1)[0]; workoutData.routine.exercises.splice(evt.newIndex, 0, movedItem); const movedProgress = workoutData.progress.splice(evt.oldIndex, 1)[0]; workoutData.progress.splice(evt.newIndex, 0, movedProgress); saveDataToLocalStorage(); renderWorkoutPage(); } }); }
-function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesSortable.destroy(); savedRoutinesSortable = new Sortable(savedRoutinesList, { handle: '.swipe-content', animation: 150, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', onEnd: (evt) => { const movedItem = allData.routines.splice(evt.oldIndex, 1)[0]; allData.routines.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } }); }
+const sortableOptions = {
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    handle: '.swipe-content',
+    delay: 200, // Delay on drag to allow for scrolling
+    delayOnTouchOnly: true
+};
+
+function initRoutineBuilderSortable() { if (routineBuilderSortable) routineBuilderSortable.destroy(); routineBuilderSortable = new Sortable(routineBuilderList, { ...sortableOptions, onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); } }); }
+function initDailyWorkoutSortable() { if (dailyWorkoutSortable) dailyWorkoutSortable.destroy(); const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; if (!workoutData) return; dailyWorkoutSortable = new Sortable(activeRoutineDisplay, { ...sortableOptions, onEnd: (evt) => { const movedItem = workoutData.routine.exercises.splice(evt.oldIndex, 1)[0]; workoutData.routine.exercises.splice(evt.newIndex, 0, movedItem); const movedProgress = workoutData.progress.splice(evt.oldIndex, 1)[0]; workoutData.progress.splice(evt.newIndex, 0, movedProgress); saveDataToLocalStorage(); renderWorkoutPage(); } }); }
+function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesSortable.destroy(); savedRoutinesSortable = new Sortable(savedRoutinesList, { ...sortableOptions, onEnd: (evt) => { const movedItem = allData.routines.splice(evt.oldIndex, 1)[0]; allData.routines.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } }); }
 
 // --- 5. EVENT HANDLER & WORKFLOW FUNCTIONS ---
 function handleAddOrUpdateDbEntry(event) { event.preventDefault(); const name = dbExerciseNameInput.value.trim(), type = dbExerciseTypeSelect.value, trackType = dbExerciseTrackType.value; if (dbEditingState.isEditing) { const ex = allData.exerciseDatabase.find(e => e.id === dbEditingState.id); if (ex) { ex.name = name; ex.type = type; ex.image = currentExerciseImage; ex.trackType = trackType; } } else { const newEx = { id: Date.now(), name, type, image: currentExerciseImage, trackType }; allData.exerciseDatabase.push(newEx); } saveDataToLocalStorage(); renderExerciseDatabase(); resetDbForm(); }
@@ -544,7 +555,7 @@ function resetSwipeState() { if (swipeState.openCardContent) { swipeState.openCa
 
 appContainer.addEventListener('touchstart', e => {
     const target = e.target.closest('.swipe-content');
-    if (!target) return;
+    if (!target || e.target.closest('.routine-builder-item')) return;
     if(swipeState.openCardContent && swipeState.openCardContent !== target) { resetSwipeState(); }
     swipeTarget = target;
     touchStartX = e.touches[0].clientX;
@@ -556,7 +567,7 @@ appContainer.addEventListener('touchmove', e => {
     touchCurrentX = e.touches[0].clientX;
     const diffX = touchCurrentX - touchStartX;
     isSwiping = true;
-    const SWIPE_WIDTH = swipeTarget.closest('.active-routine-exercise') ? SWIPE_ACTION_WIDTH_WORKOUT : SWIPE_ACTION_WIDTH;
+    const SWIPE_WIDTH = swipeTarget.closest('#active-routine-display') ? SWIPE_ACTION_WIDTH_WORKOUT : SWIPE_ACTION_WIDTH;
 
     if (swipeState.openCardContent === swipeTarget) {
         const newX = Math.min(0, -SWIPE_WIDTH + diffX);
@@ -574,7 +585,7 @@ appContainer.addEventListener('touchend', e => {
     
     const diffX = touchCurrentX - touchStartX;
     swipeTarget.style.transition = 'transform 0.3s ease-out';
-    const SWIPE_WIDTH = swipeTarget.closest('.active-routine-exercise') ? SWIPE_ACTION_WIDTH_WORKOUT : SWIPE_ACTION_WIDTH;
+    const SWIPE_WIDTH = swipeTarget.closest('#active-routine-display') ? SWIPE_ACTION_WIDTH_WORKOUT : SWIPE_ACTION_WIDTH;
     
     const wasOpen = swipeState.openCardContent === swipeTarget;
     if (wasOpen) {
