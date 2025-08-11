@@ -48,101 +48,60 @@ select { appearance: none; background-image: url('data:image/svg+xml;charset=US-
 .file-input-container input[type="file"] { display: none; }
 #db-exercise-thumbnail { width: 50px; height: 50px; border-radius: var(--radius-md); object-fit: cover; border: 1px solid var(--color-border); cursor: pointer; transition: var(--transition-fast); }
 #db-exercise-thumbnail:hover { transform: scale(1.05); box-shadow: 0 0 10px rgba(167, 139, 250, 0.4); }
-/* 6. Lists, Headers & Autocomplete */
+
+/* 6. GENERIC LIST, SWIPE & SORTABLE STYLES */
 .section-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--color-border); margin-bottom: 16px; }
 h2 { color: var(--color-text-primary); font-size: 18px; font-weight: 600; padding:0; margin: 0; }
 h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font-weight: 500;}
 .scrollable-content { flex-grow: 1; overflow-y: auto; }
-#db-exercise-list.card, #saved-routines-list.card { padding: 0; overflow: hidden; }
-.db-exercise-item { padding: 12px 16px; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; }
-.db-exercise-item:last-child { border-bottom: none; }
-.exercise-item-main { flex-grow: 1; text-align: center; }
-.exercise-item-name { font-size: 15px; font-weight: 500; display: block; margin-bottom: 2px;}
-.exercise-item-stats { color: var(--color-text-secondary); font-size: 13px; text-transform: capitalize; }
 .db-item-thumbnail { width: 40px; height: 40px; border-radius: var(--radius-sm); object-fit: cover; flex-shrink: 0; cursor: pointer; transition: transform 0.2s; }
 .db-item-thumbnail:hover { transform: scale(1.1); }
-.item-actions { display: flex; gap: 8px; }
-.item-action-btn { background-color: var(--color-surface-raised); color: var(--color-text-secondary); border: 1px solid var(--color-border); padding: 6px 12px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition-fast); font-size: 12px; font-weight: 600; }
-.edit-btn:hover { color: #A78BFA; border-color: #A78BFA; }
-.delete-btn:hover { color: #F87171; border-color: #F87171; }
-.sort-container { display: flex; align-items: center; gap: 8px; }
-.sort-container label { font-size: 14px; color: var(--color-text-secondary); }
-.sort-container select { width: auto; font-size: 14px; padding: 8px 12px; }
+
+/* Sortable Styles */
+.sortable-item { cursor: grab; }
+.sortable-ghost { background: var(--color-surface-raised); opacity: 0.5; border-radius: var(--radius-md); }
+.sortable-chosen { cursor: grabbing; }
+
+/* Swipe Styles */
+.swipe-item-container { position: relative; overflow: hidden; background-color: var(--color-surface); border-radius: var(--radius-md); }
+.swipe-content { position: relative; z-index: 2; display: flex; padding: 16px; align-items: center; gap: 16px; width: 100%; background-color: var(--color-surface); transition: transform 0.3s ease-out; }
+#db-exercise-list .swipe-content { padding: 12px 16px; } /* Adjust padding for exercise list */
+.swipe-actions { position: absolute; top: 0; right: 0; height: 100%; z-index: 1; display: flex; }
+.swipe-action-btn { width: 80px; border: none; font-weight: 600; font-size: 12px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.swipe-action-btn svg { width: 20px; height: 20px; fill: currentColor; }
+.swipe-swap-btn { background-color: #3B82F6; }
+.swipe-edit-btn { background-color: var(--color-primary); }
+.swipe-delete-btn { background-color: var(--color-danger); }
+
 /* 7. Specific Page Overrides */
 #exercises-page .card h3, #routines-page .card h3 { text-align: center; }
+#db-exercise-list.card, #saved-routines-list.card { padding: 0; overflow: hidden; background: none; border: none; }
+#db-exercise-list .card { margin-bottom: 0; border-radius: 0; border: none; border-bottom: 1px solid var(--color-border); }
+#db-exercise-list .card:last-child { border-bottom: none; }
+.exercise-item-main { flex-grow: 1; text-align: left; padding: 0 12px; }
+.exercise-item-name { font-size: 15px; font-weight: 500; display: block; margin-bottom: 2px;}
+.exercise-item-stats { color: var(--color-text-secondary); font-size: 13px; text-transform: capitalize; }
+
 #add-exercise-to-routine-controls { display: flex; flex-direction: column; gap: 16px; }
 .form-section-label { font-size: 14px; font-weight: 600; color: var(--color-text-secondary); margin-bottom: -8px; margin-top: 8px; border-bottom: 1px solid var(--color-border); padding-bottom: 8px; }
 #routine-builder-list { margin-top: 0; border-top: 1px solid var(--color-border); padding-top: 16px; display: flex; flex-direction: column; gap: 12px; }
-.routine-builder-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background-color: var(--color-background); border-radius: var(--radius-md); border: 1px solid var(--color-border); user-select: none; cursor: grab; }
-.routine-builder-item.sortable-ghost { background: var(--color-surface-raised); opacity: 0.5; }
-.routine-builder-item.sortable-chosen { cursor: grabbing; }
-.routine-builder-item-main { display: flex; align-items: center; gap: 12px; flex-grow: 1; }
-.routine-builder-item-main > div { flex-grow: 1; text-align: center; }
-.routine-builder-item-name { font-weight: 500; }
-.routine-builder-item-details { color: var(--color-text-secondary); font-size: 14px; }
-.routine-builder-item .delete-btn { padding: 6px; font-size: 16px; line-height: 1; }
-#saved-routines-list .exercise-item-stats { white-space: pre-wrap; }
+.routine-builder-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background-color: var(--color-background); border-radius: var(--radius-md); border: 1px solid var(--color-border); user-select: none; }
+.routine-builder-item .exercise-item-main { text-align: center; }
+#saved-routines-list .swipe-item-container { margin-bottom: 12px; }
 .form-actions { margin-top: 8px; }
 .placeholder-card { background-color: var(--color-surface); border: 2px dashed var(--color-border); border-radius: var(--radius-lg); padding: 40px; text-align: center; color: var(--color-text-secondary); }
+
+/* Active Workout Page */
 #routine-selection-area { display: flex; gap: 16px; align-items: center; }
 #active-routine-info .section-header { border: none; padding: 0; margin: 0; }
 .header-actions { display: flex; align-items: center; gap: 12px; }
 .header-actions .btn-danger { width: auto; }
 .header-actions .text-btn { color: var(--color-text-secondary); }
 .header-actions .text-btn:hover { color: var(--color-danger); }
-
-/* --- ACTIVE ROUTINE SWIPE STYLES --- */
-.active-routine-exercise {
-    padding: 0;
-    overflow: hidden;
-    border: 2px solid transparent;
-    transition: border-color 0.3s ease;
-}
-.active-routine-exercise.current { border-color: var(--color-primary); }
-.active-routine-exercise.finished { opacity: 0.5; }
-
-.swipe-content {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    padding: 16px;
-    align-items: center;
-    gap: 16px;
-    width: 100%;
-    background-color: var(--color-surface);
-    transition: transform 0.3s ease-out;
-}
-.swipe-actions {
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 100%;
-    z-index: 1;
-    display: flex;
-}
-.swipe-action-btn {
-    width: 80px;
-    border: none;
-    font-weight: 600;
-    font-size: 12px;
-    color: white;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-}
-.swipe-action-btn svg {
-    width: 20px;
-    height: 20px;
-    fill: currentColor;
-}
-.swipe-swap-btn { background-color: #3B82F6; }
-.swipe-edit-btn { background-color: var(--color-primary); } /* NEW */
-.swipe-delete-btn { background-color: var(--color-danger); }
-
-
+#active-routine-display { display: flex; flex-direction: column; gap: 12px; }
+.active-routine-exercise.card { padding: 0; overflow: visible; border: 2px solid transparent; transition: border-color 0.3s ease; margin-bottom: 0; }
+.active-routine-exercise.current .swipe-item-container { border: 2px solid var(--color-primary); }
+.active-routine-exercise.finished { opacity: 0.6; }
 .exercise-content { flex-grow: 1; display: flex; flex-direction: column; }
 .exercise-header { display: flex; justify-content: center; align-items: center; margin-bottom: 12px; text-align: center; }
 .exercise-actions { margin-top: auto; }

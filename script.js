@@ -7,8 +7,8 @@ let countdownIntervalId = null;
 let countdownInitialDuration = 0;
 let stopwatchIntervalId = null;
 let currentStopwatchInstanceId = null;
-let routineBuilderSortable = null;
-let swipeState = { instanceIdToSwap: null, openCardContent: null, instanceIdToEdit: null };
+let routineBuilderSortable = null, dailyWorkoutSortable = null, savedRoutinesSortable = null;
+let swipeState = { openCardContent: null, instanceIdToSwap: null, instanceIdToEdit: null };
 
 let allData = {
     exerciseDatabase: [],
@@ -18,6 +18,7 @@ let allData = {
 };
 
 // --- REFERENCES TO HTML ELEMENTS ---
+const appContainer = document.getElementById('app-container');
 const navWorkout = document.getElementById('nav-workout'), navRoutines = document.getElementById('nav-routines'), navExercises = document.getElementById('nav-exercises');
 const workoutPage = document.getElementById('workout-page'), routinesPage = document.getElementById('routines-page'), exercisesPage = document.getElementById('exercises-page');
 const addExerciseDbForm = document.getElementById('add-exercise-db-form'), dbEditingIdInput = document.getElementById('db-editing-id'), dbExerciseNameInput = document.getElementById('db-exercise-name'), dbExerciseTypeSelect = document.getElementById('db-exercise-type'), dbExerciseTrackType = document.getElementById('db-exercise-track-type'), dbExerciseImageInput = document.getElementById('db-exercise-image-input'), dbExerciseThumbnail = document.getElementById('db-exercise-thumbnail'), removeDbImageBtn = document.getElementById('remove-db-image-btn'), dbSubmitBtn = document.getElementById('db-submit-btn'), dbExerciseListDiv = document.getElementById('db-exercise-list');
@@ -34,6 +35,8 @@ const swapExerciseModal = document.getElementById('swap-exercise-modal'), swapEx
 const editWorkoutExerciseModal = document.getElementById('edit-workout-exercise-modal'), editWorkoutExerciseForm = document.getElementById('edit-workout-exercise-form'), editModalTitle = document.getElementById('edit-modal-title'), editRepsBasedInputs = document.getElementById('edit-reps-based-inputs'), editTimeBasedInputs = document.getElementById('edit-time-based-inputs'), editSetsInput = document.getElementById('edit-sets-input'), editRepsInput = document.getElementById('edit-reps-input'), editTimeSetsInput = document.getElementById('edit-time-sets-input'), editDurationInput = document.getElementById('edit-duration-input'), cancelEditBtn = document.getElementById('cancel-edit-btn');
 
 const circleCircumference = 2 * Math.PI * 54;
+const SWIPE_ACTION_WIDTH = 160; // 2 buttons * 80px
+const SWIPE_ACTION_WIDTH_WORKOUT = 240; // 3 buttons * 80px
 
 // --- 2. CORE LOGIC & HELPER FUNCTIONS ---
 function showPage(pageId) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); document.getElementById(pageId).classList.add('active'); document.getElementById(`nav-${pageId.split('-')[0]}`).classList.add('active'); closeStopwatchModal(true); renderCurrentPage(); }
@@ -99,8 +102,27 @@ function formatTotalTime(ms) {
 
 
 // --- 3. RENDERING FUNCTIONS ---
-function renderCurrentPage() { const id = document.querySelector('.page.active').id; if (id === 'exercises-page') renderExerciseDatabase(); if (id === 'routines-page') { populateExerciseDropdown(); renderSavedRoutines(); handleRoutineExerciseChange(); initRoutineBuilderSortable(); } if (id === 'workout-page') { populateDailyRoutineDropdown(); renderWorkoutPage(); } renderDateControls(); }
+function renderCurrentPage() {
+    const id = document.querySelector('.page.active').id;
+    if (id === 'exercises-page') {
+        renderExerciseDatabase();
+    }
+    if (id === 'routines-page') {
+        populateExerciseDropdown();
+        renderSavedRoutines();
+        handleRoutineExerciseChange();
+        initRoutineBuilderSortable();
+        initSavedRoutinesSortable();
+    }
+    if (id === 'workout-page') {
+        populateDailyRoutineDropdown();
+        renderWorkoutPage();
+        initDailyWorkoutSortable();
+    }
+    renderDateControls();
+}
 function renderDateControls() { const today = new Date(); today.setHours(0, 0, 0, 0); currentDate.setHours(0, 0, 0, 0); const isToday = currentDate.getTime() === today.getTime(); dateDisplayBtn.textContent = isToday ? 'Today' : currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); nextDayBtn.disabled = currentDate >= today; }
+
 function renderExerciseDatabase() {
     dbExerciseListDiv.innerHTML = '';
     if (allData.exerciseDatabase.length === 0) {
@@ -118,29 +140,42 @@ function renderExerciseDatabase() {
     Object.keys(exercisesByType).sort().forEach(type => {
         const groupCard = document.createElement('div');
         groupCard.className = 'card';
-        groupCard.style.padding = '0';
-        groupCard.style.overflow = 'hidden';
-
         const header = document.createElement('h3');
         header.textContent = type;
-        header.style.padding = '12px 16px';
+        header.style.padding = '12px 16px 0';
         header.style.margin = '0';
-        header.style.borderBottom = '1px solid var(--color-border)';
         header.style.textAlign = 'left';
         groupCard.appendChild(header);
 
         const sortedDb = exercisesByType[type].sort((a, b) => a.name.localeCompare(b.name));
 
         sortedDb.forEach(ex => {
-            const i = document.createElement('div');
-            i.className = 'db-exercise-item';
-            i.innerHTML = `${ex.image ? `<img src="${ex.image}" alt="${ex.name}" class="db-item-thumbnail" data-id="${ex.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}<div class="exercise-item-main"><span class="exercise-item-name">${ex.name}</span><small class="exercise-item-stats">${ex.type} • ${ex.trackType || 'reps'}</small></div><div class="item-actions"><button class="item-action-btn edit-btn" data-id="${ex.id}">Edit</button><button class="item-action-btn delete-btn" data-id="${ex.id}">Delete</button></div>`;
-            groupCard.appendChild(i);
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'swipe-item-container';
+            itemDiv.innerHTML = `
+                <div class="swipe-content">
+                    ${ex.image ? `<img src="${ex.image}" alt="${ex.name}" class="db-item-thumbnail" data-id="${ex.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
+                    <div class="exercise-item-main">
+                        <span class="exercise-item-name">${ex.name}</span>
+                        <small class="exercise-item-stats">${ex.type} • ${ex.trackType || 'reps'}</small>
+                    </div>
+                </div>
+                <div class="swipe-actions">
+                    <button class="swipe-action-btn swipe-edit-btn" data-id="${ex.id}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13.854 2.146a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.708 0l-2.5-2.5a.5.5 0 1 1 .708-.708L3.5 11.293l9.646-9.647a.5.5 0 0 1 .708 0zM12.5 4.5a.5.5 0 0 0-1 0v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 0-1h-1z"/></svg>
+                        <span>Edit</span>
+                    </button>
+                    <button class="swipe-action-btn swipe-delete-btn" data-id="${ex.id}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M6 2a2 2 0 0 0-2 2v1H2.5a.5.5 0 0 0 0 1h1V15a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V6h1a.5.5 0 0 0 0-1H14V4a2 2 0 0 0-2-2H6zm1 2h4v1H7V4zM5 6h8v9H5V6z"/></svg>
+                        <span>Delete</span>
+                    </button>
+                </div>`;
+            groupCard.appendChild(itemDiv);
         });
-
         dbExerciseListDiv.appendChild(groupCard);
     });
 }
+
 function populateExerciseDropdown(selectElement = routineExerciseSelect) {
     const currentValue = selectElement.value;
     selectElement.innerHTML = `<option value="" disabled selected>${selectElement === routineExerciseSelect ? 'Choose an exercise...' : 'Choose replacement...'}</option>`;
@@ -180,19 +215,37 @@ function populateDailyRoutineDropdown() {
         dailyRoutineSelect.appendChild(o);
     });
 }
+
 function renderSavedRoutines() {
     savedRoutinesList.innerHTML = '';
     if (allData.routines.length === 0) {
-        savedRoutinesList.innerHTML = `<div class="db-exercise-item" style="justify-content: center; color: var(--color-text-tertiary);">You haven't created any routines yet.</div>`;
+        savedRoutinesList.innerHTML = `<div class="placeholder-card" style="margin-top: 16px;">You haven't created any routines yet.</div>`;
         return;
     }
-    const sortedRoutines = [...allData.routines].sort((a, b) => a.name.localeCompare(b.name));
+    const sortedRoutines = [...allData.routines];
     sortedRoutines.forEach(r => {
-        const i = document.createElement('div');
-        i.className = 'db-exercise-item';
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'swipe-item-container sortable-item';
+        itemDiv.dataset.id = r.id;
         const sets = r.exercises.reduce((s, ex) => s + parseInt(ex.sets), 0);
-        i.innerHTML = `<div class="exercise-item-main"><span class="exercise-item-name">${r.name}</span><small class="exercise-item-stats">${r.exercises.length} exercises • ${sets} total sets</small></div><div class="item-actions"><button class="item-action-btn edit-btn" data-id="${r.id}">Edit</button><button class="item-action-btn delete-btn" data-id="${r.id}">Delete</button></div>`;
-        savedRoutinesList.appendChild(i);
+        itemDiv.innerHTML = `
+            <div class="swipe-content">
+                <div class="exercise-item-main">
+                    <span class="exercise-item-name">${r.name}</span>
+                    <small class="exercise-item-stats">${r.exercises.length} exercises • ${sets} total sets</small>
+                </div>
+            </div>
+            <div class="swipe-actions">
+                 <button class="swipe-action-btn swipe-edit-btn" data-id="${r.id}">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13.854 2.146a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.708 0l-2.5-2.5a.5.5 0 1 1 .708-.708L3.5 11.293l9.646-9.647a.5.5 0 0 1 .708 0zM12.5 4.5a.5.5 0 0 0-1 0v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 0-1h-1z"/></svg>
+                    <span>Edit</span>
+                </button>
+                <button class="swipe-action-btn swipe-delete-btn" data-id="${r.id}">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M6 2a2 2 0 0 0-2 2v1H2.5a.5.5 0 0 0 0 1h1V15a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V6h1a.5.5 0 0 0 0-1H14V4a2 2 0 0 0-2-2H6zm1 2h4v1H7V4zM5 6h8v9H5V6z"/></svg>
+                    <span>Delete</span>
+                </button>
+            </div>`;
+        savedRoutinesList.appendChild(itemDiv);
     });
 }
 
@@ -238,7 +291,7 @@ function renderWorkoutPage() {
 
             summaryHTML += `<div class="summary-exercise-card">
                 <div class="summary-exercise-header">
-                    <div class="exercise-item-main">
+                    <div class="exercise-item-main" style="text-align:center;">
                         <span class="exercise-item-name">${exercise.name}</span>
                         <small class="exercise-item-stats">${stats}</small>
                     </div>
@@ -267,7 +320,7 @@ function renderWorkoutPage() {
         let isCurrent = false;
         if (!isFinished && !isCurrentExerciseFound) { isCurrent = true; isCurrentExerciseFound = true; }
         const itemDiv = document.createElement('div');
-        itemDiv.className = `card active-routine-exercise ${isCurrent ? 'current' : ''} ${isFinished ? 'finished' : ''}`;
+        itemDiv.className = `active-routine-exercise sortable-item ${isCurrent ? 'current' : ''} ${isFinished ? 'finished' : ''}`;
         itemDiv.dataset.instanceId = exercise.instanceId;
         let stats, trackingUI;
         if (exercise.trackType === 'time') {
@@ -282,52 +335,58 @@ function renderWorkoutPage() {
         const intervalButtonsHTML = intervals.map(time => `<button class="timer-interval-btn ${progress.timer.duration === time ? 'selected' : ''}" data-time="${time}" ${!progress.timer.enabled ? 'disabled' : ''}>${time}s</button>`).join('');
         
         itemDiv.innerHTML = `
-            <div class="swipe-content">
-                ${exercise.image ? `<img src="${exercise.image}" alt="${exercise.name}" class="db-item-thumbnail" data-id="${exercise.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
-                <div class="exercise-content">
-                    <div class="exercise-header">
-                        <div class="exercise-item-main">
-                            <span class="exercise-item-name">${exercise.name}</span>
-                            <small class="exercise-item-stats">${stats}</small>
+            <div class="swipe-item-container">
+                <div class="swipe-content">
+                    ${exercise.image ? `<img src="${exercise.image}" alt="${exercise.name}" class="db-item-thumbnail" data-id="${exercise.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
+                    <div class="exercise-content">
+                        <div class="exercise-header">
+                            <div class="exercise-item-main" style="text-align:left; padding: 0 12px;">
+                                <span class="exercise-item-name">${exercise.name}</span>
+                                <small class="exercise-item-stats">${stats}</small>
+                            </div>
                         </div>
-                    </div>
-                    ${trackingUI}
-                    <div class="timer-controls">
-                        <div class="timer-toggle-area">
-                            <label for="timer-toggle-${exercise.instanceId}">Break Timer</label>
-                            <label class="toggle-switch">
-                                <input type="checkbox" class="timer-toggle" id="timer-toggle-${exercise.instanceId}" ${progress.timer.enabled ? 'checked' : ''}>
-                                <span class="toggle-slider"></span>
-                            </label>
+                        ${trackingUI}
+                        <div class="timer-controls">
+                            <div class="timer-toggle-area">
+                                <label for="timer-toggle-${exercise.instanceId}">Break Timer</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" class="timer-toggle" id="timer-toggle-${exercise.instanceId}" ${progress.timer.enabled ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="timer-intervals">${intervalButtonsHTML}</div>
                         </div>
-                        <div class="timer-intervals">${intervalButtonsHTML}</div>
                     </div>
                 </div>
-            </div>
-            <div class="swipe-actions">
-                <button class="swipe-action-btn swipe-swap-btn" data-instance-id="${exercise.instanceId}">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M14.5 1.5a.5.5 0 0 1 .5.5v11.5a.5.5 0 0 1-1 0V2.707l-2.646 2.647a.5.5 0 0 1-.708-.708l3.5-3.5a.5.5 0 0 1 .708 0zM5.5 18.5a.5.5 0 0 1-.5-.5V6.5a.5.5 0 0 1 1 0v11.293l2.646-2.647a.5.5 0 0 1 .708.708l-3.5 3.5a.5.5 0 0 1-.708 0z"/></svg>
-                    <span>Swap</span>
-                </button>
-                <button class="swipe-action-btn swipe-edit-btn" data-instance-id="${exercise.instanceId}">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13.854 2.146a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.708 0l-2.5-2.5a.5.5 0 1 1 .708-.708L3.5 11.293l9.646-9.647a.5.5 0 0 1 .708 0zM12.5 4.5a.5.5 0 0 0-1 0v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 0-1h-1z"/></svg>
-                    <span>Edit</span>
-                </button>
-                <button class="swipe-action-btn swipe-delete-btn" data-instance-id="${exercise.instanceId}">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M6 2a2 2 0 0 0-2 2v1H2.5a.5.5 0 0 0 0 1h1V15a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V6h1a.5.5 0 0 0 0-1H14V4a2 2 0 0 0-2-2H6zm1 2h4v1H7V4zM5 6h8v9H5V6z"/></svg>
-                    <span>Delete</span>
-                </button>
+                <div class="swipe-actions">
+                    <button class="swipe-action-btn swipe-swap-btn" data-instance-id="${exercise.instanceId}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M14.5 1.5a.5.5 0 0 1 .5.5v11.5a.5.5 0 0 1-1 0V2.707l-2.646 2.647a.5.5 0 0 1-.708-.708l3.5-3.5a.5.5 0 0 1 .708 0zM5.5 18.5a.5.5 0 0 1-.5-.5V6.5a.5.5 0 0 1 1 0v11.293l2.646-2.647a.5.5 0 0 1 .708.708l-3.5 3.5a.5.5 0 0 1-.708 0z"/></svg>
+                        <span>Swap</span>
+                    </button>
+                    <button class="swipe-action-btn swipe-edit-btn" data-instance-id="${exercise.instanceId}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13.854 2.146a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.708 0l-2.5-2.5a.5.5 0 1 1 .708-.708L3.5 11.293l9.646-9.647a.5.5 0 0 1 .708 0zM12.5 4.5a.5.5 0 0 0-1 0v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 0-1h-1z"/></svg>
+                        <span>Edit</span>
+                    </button>
+                    <button class="swipe-action-btn swipe-delete-btn" data-instance-id="${exercise.instanceId}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M6 2a2 2 0 0 0-2 2v1H2.5a.5.5 0 0 0 0 1h1V15a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V6h1a.5.5 0 0 0 0-1H14V4a2 2 0 0 0-2-2H6zm1 2h4v1H7V4zM5 6h8v9H5V6z"/></svg>
+                        <span>Delete</span>
+                    </button>
+                </div>
             </div>`;
         activeRoutineDisplay.appendChild(itemDiv);
     });
 }
 
-// --- 4. EVENT HANDLER & WORKFLOW FUNCTIONS ---
+// --- 4. SORTABLE & DRAG/DROP ---
+function initRoutineBuilderSortable() { if (routineBuilderSortable) routineBuilderSortable.destroy(); routineBuilderSortable = new Sortable(routineBuilderList, { animation: 150, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); } }); }
+function initDailyWorkoutSortable() { if (dailyWorkoutSortable) dailyWorkoutSortable.destroy(); const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; if (!workoutData) return; dailyWorkoutSortable = new Sortable(activeRoutineDisplay, { handle: '.swipe-content', animation: 150, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', onEnd: (evt) => { const movedItem = workoutData.routine.exercises.splice(evt.oldIndex, 1)[0]; workoutData.routine.exercises.splice(evt.newIndex, 0, movedItem); const movedProgress = workoutData.progress.splice(evt.oldIndex, 1)[0]; workoutData.progress.splice(evt.newIndex, 0, movedProgress); saveDataToLocalStorage(); renderWorkoutPage(); } }); }
+function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesSortable.destroy(); savedRoutinesSortable = new Sortable(savedRoutinesList, { handle: '.swipe-content', animation: 150, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', onEnd: (evt) => { const movedItem = allData.routines.splice(evt.oldIndex, 1)[0]; allData.routines.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } }); }
+
+// --- 5. EVENT HANDLER & WORKFLOW FUNCTIONS ---
 function handleAddOrUpdateDbEntry(event) { event.preventDefault(); const name = dbExerciseNameInput.value.trim(), type = dbExerciseTypeSelect.value, trackType = dbExerciseTrackType.value; if (dbEditingState.isEditing) { const ex = allData.exerciseDatabase.find(e => e.id === dbEditingState.id); if (ex) { ex.name = name; ex.type = type; ex.image = currentExerciseImage; ex.trackType = trackType; } } else { const newEx = { id: Date.now(), name, type, image: currentExerciseImage, trackType }; allData.exerciseDatabase.push(newEx); } saveDataToLocalStorage(); renderExerciseDatabase(); resetDbForm(); }
 function handleRoutineExerciseChange() { const selectedId = parseInt(routineExerciseSelect.value); const exercise = allData.exerciseDatabase.find(ex => ex.id === selectedId); if (!exercise) { repsBasedInputs.classList.add('hidden'); timeBasedInputs.classList.add('hidden'); return; } if (exercise.trackType === 'time') { repsBasedInputs.classList.add('hidden'); timeBasedInputs.classList.remove('hidden'); } else { repsBasedInputs.classList.remove('hidden'); timeBasedInputs.classList.add('hidden'); } }
 function handleAddExerciseToBuilder() { const id = parseInt(routineExerciseSelect.value); if (isNaN(id)) { alert("Please select an exercise."); return; } const exercise = allData.exerciseDatabase.find(ex => ex.id === id); if (!exercise) return; let exForRoutine; if (exercise.trackType === 'time') { const sets = parseInt(routineTimeSetsInput.value); const duration = parseInt(routineDurationInput.value); if (isNaN(sets) || sets <= 0 || isNaN(duration) || duration <= 0) { alert("Please enter valid sets and duration."); return; } exForRoutine = { exerciseId: id, sets, duration, trackType: 'time', instanceId: Date.now() + Math.random() }; } else { const sets = parseInt(routineSetsInput.value); const reps = routineRepsInput.value.trim(); if (isNaN(sets) || sets <= 0 || !reps) { alert("Please enter valid sets and reps."); return; } exForRoutine = { exerciseId: id, sets, reps, trackType: 'reps', instanceId: Date.now() + Math.random() }; } routineBuilderState.exercises.push(exForRoutine); routineExerciseSelect.value = ''; renderRoutineBuilderList(); }
-function renderRoutineBuilderList() { routineBuilderList.innerHTML = ''; routineBuilderState.exercises.forEach(exRef => { const ex = allData.exerciseDatabase.find(dbEx => dbEx.id === exRef.exerciseId); if (ex) { const i = document.createElement('div'); i.className = 'routine-builder-item'; i.dataset.instanceId = exRef.instanceId; const details = exRef.trackType === 'time' ? `${exRef.sets} sets × ${exRef.duration} sec` : `${exRef.sets} sets × ${exRef.reps} reps`; i.innerHTML = `<div class="routine-builder-item-main"><img src="${ex.image || ''}" class="db-item-thumbnail" style="${!ex.image ? 'background-color: var(--color-background);' : ''}"><div><span class="routine-builder-item-name">${ex.name}</span><small class="routine-builder-item-details">${details}</small></div></div><button type="button" class="item-action-btn delete-btn" data-instance-id="${exRef.instanceId}">×</button>`; routineBuilderList.appendChild(i); } }); validateRoutineForm(); }
-function initRoutineBuilderSortable() { if (routineBuilderSortable) { routineBuilderSortable.destroy(); } routineBuilderSortable = new Sortable(routineBuilderList, { animation: 150, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); } }); }
+function renderRoutineBuilderList() { routineBuilderList.innerHTML = ''; routineBuilderState.exercises.forEach(exRef => { const ex = allData.exerciseDatabase.find(dbEx => dbEx.id === exRef.exerciseId); if (ex) { const i = document.createElement('div'); i.className = 'routine-builder-item sortable-item'; i.dataset.instanceId = exRef.instanceId; const details = exRef.trackType === 'time' ? `${exRef.sets} sets × ${exRef.duration} sec` : `${exRef.sets} sets × ${exRef.reps} reps`; i.innerHTML = `<div class="routine-builder-item-main"><img src="${ex.image || ''}" class="db-item-thumbnail" style="${!ex.image ? 'background-color: var(--color-background);' : ''}"><div><span class="exercise-item-name">${ex.name}</span><small class="exercise-item-stats">${details}</small></div></div><button type="button" class="item-action-btn delete-btn" data-instance-id="${exRef.instanceId}">×</button>`; routineBuilderList.appendChild(i); } }); validateRoutineForm(); }
 function validateRoutineForm() { const name = routineNameInput.value.trim(); const hasExercises = routineBuilderState.exercises.length > 0; saveRoutineBtn.disabled = !(name && hasExercises); }
 function handleSaveRoutine(event) { event.preventDefault(); const name = routineNameInput.value.trim(); const exercisesToSave = routineBuilderState.exercises.map(ex => { const { exerciseId, sets, reps, duration, trackType } = ex; return trackType === 'time' ? { exerciseId, sets, duration, trackType } : { exerciseId, sets, reps, trackType }; }); if (routineEditingState.isEditing) { const r = allData.routines.find(r => r.id === routineEditingState.id); if (r) { r.name = name; r.exercises = exercisesToSave; } } else { const newRoutine = { id: Date.now(), name, exercises: exercisesToSave }; allData.routines.push(newRoutine); } saveDataToLocalStorage(); renderSavedRoutines(); resetRoutineForm(); }
 function resetRoutineForm() { createRoutineForm.reset(); routineBuilderState = { exercises: [] }; routineEditingState = { isEditing: false, id: null }; routineEditingIdInput.value = ''; saveRoutineBtn.textContent = 'Save Routine'; handleRoutineExerciseChange(); renderRoutineBuilderList(); }
@@ -384,8 +443,7 @@ function handleSetCompletion(instanceId) {
     }
 }
 
-
-// --- 5. STOPWATCH MODAL LOGIC ---
+// --- 6. STOPWATCH MODAL LOGIC ---
 function openStopwatchModal(instanceId) {
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
@@ -443,25 +501,23 @@ function closeStopwatchModal(force = false) {
     currentStopwatchInstanceId = null;
 }
 
-// --- 6. EVENT LISTENERS ---
+// --- 7. GLOBAL EVENT LISTENERS (NAVIGATION, SWIPE, ACTIONS) ---
 navWorkout.addEventListener('click', () => showPage('workout-page'));
 navRoutines.addEventListener('click', () => showPage('routines-page'));
 navExercises.addEventListener('click', () => showPage('exercises-page'));
+
 addExerciseDbForm.addEventListener('submit', handleAddOrUpdateDbEntry);
 addExerciseDbForm.addEventListener('input', validateDbForm);
 dbExerciseImageInput.addEventListener('change', async (event) => { const file = event.target.files[0]; if (file) { try { const compressedDataUrl = await compressImage(file); currentExerciseImage = compressedDataUrl; dbExerciseThumbnail.src = compressedDataUrl; dbExerciseThumbnail.classList.remove('hidden'); removeDbImageBtn.classList.remove('hidden'); } catch (error) { console.error("Image compression failed:", error); alert("Could not process image."); } } });
 removeDbImageBtn.addEventListener('click', () => { currentExerciseImage = null; dbExerciseImageInput.value = ''; dbExerciseThumbnail.classList.add('hidden'); removeDbImageBtn.classList.add('hidden'); });
-dbExerciseThumbnail.addEventListener('click', () => { if (dbExerciseThumbnail.src) { fullSizeImage.src = dbExerciseThumbnail.src; openModal(imageViewerModal); } });
-dbExerciseListDiv.addEventListener('click', e => { const t = e.target; if (t.closest('.item-action-btn')) { const id = parseInt(t.dataset.id); if (t.classList.contains('edit-btn')) { const ex = allData.exerciseDatabase.find(e => e.id === id); if (ex) { resetDbForm(); dbEditingIdInput.value = ex.id; dbExerciseNameInput.value = ex.name; dbExerciseTypeSelect.value = ex.type; dbExerciseTrackType.value = ex.trackType || 'reps'; if (ex.image) { dbExerciseThumbnail.src = ex.image; dbExerciseThumbnail.classList.remove('hidden'); removeDbImageBtn.classList.remove('hidden'); currentExerciseImage = ex.image; } dbSubmitBtn.textContent = 'Update Exercise'; dbEditingState = { isEditing: true, id }; validateDbForm(); window.scrollTo(0, 0); dbExerciseNameInput.focus(); } } else if (t.classList.contains('delete-btn')) { if (confirm('Are you sure?')) { allData.exerciseDatabase = allData.exerciseDatabase.filter(ex => ex.id !== id); saveDataToLocalStorage(); renderExerciseDatabase(); if (dbEditingState.id === id) resetDbForm(); } } } else if (t.classList.contains('db-item-thumbnail')) { const id = parseInt(t.dataset.id); const ex = allData.exerciseDatabase.find(e => e.id === id); if (ex && ex.image) { fullSizeImage.src = ex.image; openModal(imageViewerModal); } } });
 
 routineExerciseSelect.addEventListener('change', handleRoutineExerciseChange);
 addExerciseToBuilderBtn.addEventListener('click', handleAddExerciseToBuilder);
 createRoutineForm.addEventListener('submit', handleSaveRoutine);
 routineNameInput.addEventListener('input', validateRoutineForm);
 routineBuilderList.addEventListener('click', e => { if (e.target.matches('.delete-btn')) { const instanceId = parseFloat(e.target.dataset.instanceId); routineBuilderState.exercises = routineBuilderState.exercises.filter(ex => ex.instanceId !== instanceId); renderRoutineBuilderList(); } });
-savedRoutinesList.addEventListener('click', e => { const t = e.target.closest('.item-action-btn'); if (!t) return; const id = parseInt(t.dataset.id); if (t.classList.contains('delete-btn')) { if (confirm('Are you sure you want to delete this routine?')) { allData.routines = allData.routines.filter(r => r.id !== id); saveDataToLocalStorage(); renderSavedRoutines(); if (routineEditingState.id === id) resetRoutineForm(); } } else if (t.classList.contains('edit-btn')) { const r = allData.routines.find(r => r.id === id); if (r) { resetRoutineForm(); routineEditingState = { isEditing: true, id }; routineEditingIdInput.value = id; routineNameInput.value = r.name; routineBuilderState.exercises = r.exercises.map(leanEx => ({ ...leanEx, instanceId: Date.now() + Math.random() })); renderRoutineBuilderList(); saveRoutineBtn.textContent = 'Update Routine'; window.scrollTo(0, 0); } } });
-dailyRoutineSelect.addEventListener('change', () => { startRoutineBtn.disabled = !dailyRoutineSelect.value; });
 
+dailyRoutineSelect.addEventListener('change', () => { startRoutineBtn.disabled = !dailyRoutineSelect.value; });
 startRoutineBtn.addEventListener('click', () => {
     const id = parseInt(dailyRoutineSelect.value);
     const sourceRoutine = allData.routines.find(r => r.id === id);
@@ -473,292 +529,189 @@ startRoutineBtn.addEventListener('click', () => {
         allData.history[dateKey] = { routine: workoutToLog, progress, isComplete: false, startTime: Date.now(), completionTime: null, notes: '' };
         saveDataToLocalStorage();
         renderWorkoutPage();
+        initDailyWorkoutSortable();
     }
 });
-
 activeRoutineInfo.addEventListener('click', e => {
     const t = e.target;
-    if (t.id === 'finish-workout-btn') {
-        if (confirm("Are you sure you want to finish and log this workout?")) {
-            completeWorkout(false);
-        }
-    }
-    if (t.id === 'reset-workout-btn') {
-        if (confirm("Are you sure you want to reset this workout? Your progress for today will be lost.")) {
-            const dateKey = getFormattedDate(currentDate);
-            if (allData.history[dateKey]) {
-                delete allData.history[dateKey];
-                closeStopwatchModal(true);
-                saveDataToLocalStorage();
-                renderWorkoutPage();
-            }
-        }
-    }
+    if (t.id === 'finish-workout-btn') { if (confirm("Are you sure you want to finish and log this workout?")) { completeWorkout(false); } }
+    if (t.id === 'reset-workout-btn') { if (confirm("Are you sure you want to reset this workout? Your progress for today will be lost.")) { const dateKey = getFormattedDate(currentDate); if (allData.history[dateKey]) { delete allData.history[dateKey]; closeStopwatchModal(true); saveDataToLocalStorage(); renderWorkoutPage(); } } }
 });
 
-// --- SWIPE HANDLING ---
-let touchStartX = 0;
-let touchCurrentX = 0;
-let swipeTarget = null;
-let isSwiping = false;
-const SWIPE_ACTION_WIDTH = 240; // 3 buttons * 80px each
+// SWIPE HANDLING
+let touchStartX = 0; let touchCurrentX = 0; let swipeTarget = null; let isSwiping = false;
+function resetSwipeState() { if (swipeState.openCardContent) { swipeState.openCardContent.style.transform = 'translateX(0px)'; } touchStartX = 0; touchCurrentX = 0; swipeTarget = null; isSwiping = false; swipeState.openCardContent = null; }
 
-function resetSwipeState() {
-    if (swipeState.openCardContent) {
-        swipeState.openCardContent.style.transform = 'translateX(0px)';
-    }
-    touchStartX = 0;
-    touchCurrentX = 0;
-    swipeTarget = null;
-    isSwiping = false;
-    swipeState.openCardContent = null;
-}
-
-activeRoutineDisplay.addEventListener('touchstart', e => {
+appContainer.addEventListener('touchstart', e => {
     const target = e.target.closest('.swipe-content');
     if (!target) return;
-    if(swipeState.openCardContent && swipeState.openCardContent !== target) {
-       resetSwipeState();
-    }
+    if(swipeState.openCardContent && swipeState.openCardContent !== target) { resetSwipeState(); }
     swipeTarget = target;
     touchStartX = e.touches[0].clientX;
     swipeTarget.style.transition = 'none';
 }, { passive: true });
 
-activeRoutineDisplay.addEventListener('touchmove', e => {
+appContainer.addEventListener('touchmove', e => {
     if (!swipeTarget) return;
     touchCurrentX = e.touches[0].clientX;
     const diffX = touchCurrentX - touchStartX;
     isSwiping = true;
+    const SWIPE_WIDTH = swipeTarget.closest('.active-routine-exercise') ? SWIPE_ACTION_WIDTH_WORKOUT : SWIPE_ACTION_WIDTH;
 
-    if (swipeState.openCardContent === swipeTarget) { // If card is open, allow right swipe to close
-        const newX = Math.min(0, -SWIPE_ACTION_WIDTH + diffX);
+    if (swipeState.openCardContent === swipeTarget) {
+        const newX = Math.min(0, -SWIPE_WIDTH + diffX);
         swipeTarget.style.transform = `translateX(${newX}px)`;
-    } else { // If card is closed, only allow left swipe
+    } else {
         if (diffX < 0) {
-            const transformX = Math.max(-SWIPE_ACTION_WIDTH, diffX);
+            const transformX = Math.max(-SWIPE_WIDTH, diffX);
             swipeTarget.style.transform = `translateX(${transformX}px)`;
         }
     }
 }, { passive: true });
 
-activeRoutineDisplay.addEventListener('touchend', e => {
-    if (!swipeTarget || !isSwiping) {
-        swipeTarget = null;
-        return;
-    };
+appContainer.addEventListener('touchend', e => {
+    if (!swipeTarget || !isSwiping) { swipeTarget = null; return; };
     
     const diffX = touchCurrentX - touchStartX;
     swipeTarget.style.transition = 'transform 0.3s ease-out';
+    const SWIPE_WIDTH = swipeTarget.closest('.active-routine-exercise') ? SWIPE_ACTION_WIDTH_WORKOUT : SWIPE_ACTION_WIDTH;
     
     const wasOpen = swipeState.openCardContent === swipeTarget;
     if (wasOpen) {
-        if (diffX > 60) { // If swiped right enough, close
-            swipeTarget.style.transform = 'translateX(0px)';
-            swipeState.openCardContent = null;
-        } else { // Otherwise, snap back to open
-            swipeTarget.style.transform = `translateX(${-SWIPE_ACTION_WIDTH}px)`;
-        }
+        if (diffX > 60) { swipeTarget.style.transform = 'translateX(0px)'; swipeState.openCardContent = null; } 
+        else { swipeTarget.style.transform = `translateX(${-SWIPE_WIDTH}px)`; }
     } else {
-        if (diffX < -60) { // If swiped left enough, open
-            swipeTarget.style.transform = `translateX(${-SWIPE_ACTION_WIDTH}px)`;
-            swipeState.openCardContent = swipeTarget;
-        } else { // Otherwise, snap back to closed
-            swipeTarget.style.transform = 'translateX(0px)';
-        }
+        if (diffX < -60) { swipeTarget.style.transform = `translateX(${-SWIPE_WIDTH}px)`; swipeState.openCardContent = swipeTarget; } 
+        else { swipeTarget.style.transform = 'translateX(0px)'; }
     }
-    swipeTarget = null;
-    isSwiping = false;
+    swipeTarget = null; isSwiping = false;
 });
 
 
-activeRoutineDisplay.addEventListener('click', e => {
+appContainer.addEventListener('click', e => {
     const t = e.target;
-    if (isSwiping || (touchStartX !== 0 && touchStartX !== touchCurrentX)) {
-        touchStartX = 0;
-        touchCurrentX = 0;
-        if (t.closest('.swipe-content')) {
-            e.stopPropagation();
-        }
-    }
-    
-    if (swipeState.openCardContent && !t.closest('.swipe-actions')) {
-       resetSwipeState();
-    }
+    if (isSwiping || (touchStartX !== 0 && touchStartX !== touchCurrentX)) { touchStartX = 0; touchCurrentX = 0; if (t.closest('.swipe-content')) { e.stopPropagation(); } }
+    if (swipeState.openCardContent && !t.closest('.swipe-actions')) { resetSwipeState(); }
 
-    if (t.id === 'start-new-workout-btn') { if (confirm("This will clear today's completed log. Are you sure you want to start a new workout?")) { delete allData.history[getFormattedDate(currentDate)]; saveDataToLocalStorage(); renderWorkoutPage(); } return; }
-    
-    if (t.id === 'save-summary-changes-btn') {
-        const dateKey = getFormattedDate(currentDate);
-        const workoutData = allData.history[dateKey];
-        
-        const notesInput = document.getElementById('workout-notes-input');
-        workoutData.notes = notesInput.value;
-
-        document.querySelectorAll('.summary-reps-input').forEach(input => {
-            const instanceId = parseFloat(input.dataset.instanceId);
-            const setIndex = parseInt(input.dataset.setIndex);
-            const progress = workoutData.progress.find(p => p.instanceId === instanceId);
-            if (progress && progress.loggedData[setIndex]) {
-                progress.loggedData[setIndex].reps = input.value;
-            }
-        });
-        document.querySelectorAll('.summary-weight-input').forEach(input => {
-            const instanceId = parseFloat(input.dataset.instanceId);
-            const setIndex = parseInt(input.dataset.setIndex);
-            const progress = workoutData.progress.find(p => p.instanceId === instanceId);
-            if (progress && progress.loggedData[setIndex]) {
-                progress.loggedData[setIndex].weight = input.value;
-            }
-        });
-        
-        saveDataToLocalStorage();
-        t.textContent = 'Saved!';
-        setTimeout(() => { t.textContent = 'Save Changes'; }, 1500);
-        return;
-    }
-    
-    // SWIPE AND DELETE ACTIONS
-    const swapBtn = t.closest('.swipe-swap-btn');
+    // SHARED SWIPE ACTIONS
     const deleteBtn = t.closest('.swipe-delete-btn');
     const editBtn = t.closest('.swipe-edit-btn');
-
-    if (deleteBtn) {
-        if (confirm("Are you sure you want to delete this exercise from today's workout?")) {
-            const instanceId = parseFloat(deleteBtn.dataset.instanceId);
-            const dateKey = getFormattedDate(currentDate);
-            const workoutData = allData.history[dateKey];
-            workoutData.routine.exercises = workoutData.routine.exercises.filter(ex => ex.instanceId !== instanceId);
-            workoutData.progress = workoutData.progress.filter(p => p.instanceId !== instanceId);
-            saveDataToLocalStorage();
-            renderWorkoutPage();
-        }
-    } else if (swapBtn) {
-        swipeState.instanceIdToSwap = parseFloat(swapBtn.dataset.instanceId);
-        populateExerciseDropdown(swapExerciseSelect);
-        openModal(swapExerciseModal);
-    } else if (editBtn) {
-        const instanceId = parseFloat(editBtn.dataset.instanceId);
-        swipeState.instanceIdToEdit = instanceId;
-        const workoutData = allData.history[getFormattedDate(currentDate)];
-        const exercise = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId);
-
-        if (exercise) {
-            editModalTitle.textContent = `Edit ${exercise.name}`;
-            if (exercise.trackType === 'time') {
-                editTimeBasedInputs.classList.remove('hidden');
-                editRepsBasedInputs.classList.add('hidden');
-                editTimeSetsInput.value = exercise.sets;
-                editDurationInput.value = exercise.duration;
-            } else {
-                editRepsBasedInputs.classList.remove('hidden');
-                editTimeBasedInputs.classList.add('hidden');
-                editSetsInput.value = exercise.sets;
-                editRepsInput.value = exercise.reps;
+    if(deleteBtn) {
+        const id = parseInt(deleteBtn.dataset.id);
+        const parentList = t.closest('#db-exercise-list, #saved-routines-list');
+        if (parentList) {
+            if (confirm('Are you sure you want to permanently delete this item?')) {
+                if (parentList.id === 'db-exercise-list') {
+                    allData.exerciseDatabase = allData.exerciseDatabase.filter(ex => ex.id !== id);
+                    if (dbEditingState.id === id) resetDbForm();
+                    renderExerciseDatabase();
+                } else if (parentList.id === 'saved-routines-list') {
+                    allData.routines = allData.routines.filter(r => r.id !== id);
+                    if (routineEditingState.id === id) resetRoutineForm();
+                    renderSavedRoutines();
+                }
+                saveDataToLocalStorage();
             }
-            openModal(editWorkoutExerciseModal);
+        }
+    } else if (editBtn) {
+        const id = parseInt(editBtn.dataset.id);
+        const parentList = t.closest('#db-exercise-list, #saved-routines-list');
+         if (parentList) {
+            if (parentList.id === 'db-exercise-list') {
+                const ex = allData.exerciseDatabase.find(e => e.id === id);
+                if (ex) { resetDbForm(); dbEditingIdInput.value = ex.id; dbExerciseNameInput.value = ex.name; dbExerciseTypeSelect.value = ex.type; dbExerciseTrackType.value = ex.trackType || 'reps'; if (ex.image) { dbExerciseThumbnail.src = ex.image; dbExerciseThumbnail.classList.remove('hidden'); removeDbImageBtn.classList.remove('hidden'); currentExerciseImage = ex.image; } dbSubmitBtn.textContent = 'Update Exercise'; dbEditingState = { isEditing: true, id }; validateDbForm(); exercisesPage.querySelector('main').scrollTo(0, 0); dbExerciseNameInput.focus(); }
+            } else if (parentList.id === 'saved-routines-list') {
+                const r = allData.routines.find(r => r.id === id);
+                if (r) { resetRoutineForm(); routineEditingState = { isEditing: true, id }; routineEditingIdInput.value = id; routineNameInput.value = r.name; routineBuilderState.exercises = r.exercises.map(leanEx => ({ ...leanEx, instanceId: Date.now() + Math.random() })); renderRoutineBuilderList(); saveRoutineBtn.textContent = 'Update Routine'; routinesPage.querySelector('main').scrollTo(0, 0); }
+            }
+            resetSwipeState();
         }
     }
 
+    // PAGE-SPECIFIC ACTIONS
+    const workoutPageActions = t.closest('#workout-page');
+    if(workoutPageActions) {
+        if (t.id === 'start-new-workout-btn') { if (confirm("This will clear today's completed log. Are you sure?")) { delete allData.history[getFormattedDate(currentDate)]; saveDataToLocalStorage(); renderWorkoutPage(); } return; }
+        if (t.id === 'save-summary-changes-btn') {
+            const dateKey = getFormattedDate(currentDate);
+            const workoutData = allData.history[dateKey];
+            workoutData.notes = document.getElementById('workout-notes-input').value;
+            document.querySelectorAll('.summary-reps-input, .summary-weight-input').forEach(input => {
+                const instanceId = parseFloat(input.dataset.instanceId);
+                const setIndex = parseInt(input.dataset.setIndex);
+                const key = input.classList.contains('summary-reps-input') ? 'reps' : 'weight';
+                const progress = workoutData.progress.find(p => p.instanceId === instanceId);
+                if (progress && progress.loggedData[setIndex]) { progress.loggedData[setIndex][key] = input.value; }
+            });
+            saveDataToLocalStorage(); t.textContent = 'Saved!'; setTimeout(() => { t.textContent = 'Save Changes'; }, 1500); return;
+        }
 
-    const card = t.closest('.active-routine-exercise');
-    if (!card) return;
-    const instanceId = parseFloat(card.dataset.instanceId);
-    if (t.matches('.start-reps-set-btn')) {
-        const dateKey = getFormattedDate(currentDate);
-        const workoutData = allData.history[dateKey];
-        const progress = workoutData.progress.find(p => p.instanceId === instanceId);
-        const exerciseData = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId);
-        
-        if (!progress.loggedData) progress.loggedData = [];
-        progress.loggedData.push({ reps: exerciseData.reps, weight: '' });
-        progress.setsCompleted++;
+        const swapBtnWorkout = t.closest('.swipe-swap-btn');
+        const deleteBtnWorkout = t.closest('.swipe-delete-btn');
+        const editBtnWorkout = t.closest('.swipe-edit-btn');
+        if (deleteBtnWorkout) {
+             if (confirm("Delete this exercise from today's workout?")) {
+                const instanceId = parseFloat(deleteBtnWorkout.dataset.instanceId);
+                const dateKey = getFormattedDate(currentDate);
+                const workoutData = allData.history[dateKey];
+                workoutData.routine.exercises = workoutData.routine.exercises.filter(ex => ex.instanceId !== instanceId);
+                workoutData.progress = workoutData.progress.filter(p => p.instanceId !== instanceId);
+                saveDataToLocalStorage(); renderWorkoutPage();
+            }
+        } else if (swapBtnWorkout) {
+            swipeState.instanceIdToSwap = parseFloat(swapBtnWorkout.dataset.instanceId);
+            populateExerciseDropdown(swapExerciseSelect); openModal(swapExerciseModal);
+        } else if (editBtnWorkout) {
+            const instanceId = parseFloat(editBtnWorkout.dataset.instanceId);
+            swipeState.instanceIdToEdit = instanceId;
+            const exercise = allData.history[getFormattedDate(currentDate)].routine.exercises.find(ex => ex.instanceId === instanceId);
+            if (exercise) {
+                editModalTitle.textContent = `Edit ${exercise.name}`;
+                if (exercise.trackType === 'time') {
+                    editTimeBasedInputs.classList.remove('hidden'); editRepsBasedInputs.classList.add('hidden');
+                    editTimeSetsInput.value = exercise.sets; editDurationInput.value = exercise.duration;
+                } else {
+                    editRepsBasedInputs.classList.remove('hidden'); editTimeBasedInputs.classList.add('hidden');
+                    editSetsInput.value = exercise.sets; editRepsInput.value = exercise.reps;
+                }
+                openModal(editWorkoutExerciseModal);
+            }
+        }
 
-        handleSetCompletion(instanceId);
-    } else if (t.matches('.start-stopwatch-modal-btn')) {
-        openStopwatchModal(instanceId);
-    } else if (t.matches('.timer-toggle')) {
-        const progress = allData.history[getFormattedDate(currentDate)].progress.find(p => p.instanceId === instanceId);
-        progress.timer.enabled = t.checked;
-        saveDataToLocalStorage();
-        renderWorkoutPage();
-    } else if (t.matches('.timer-interval-btn')) {
-        const progress = allData.history[getFormattedDate(currentDate)].progress.find(p => p.instanceId === instanceId);
-        progress.timer.duration = parseInt(t.dataset.time);
-        saveDataToLocalStorage();
-        renderWorkoutPage();
-    } else if (t.classList.contains('db-item-thumbnail')) {
-        const id = parseInt(t.dataset.id);
-        const ex = allData.exerciseDatabase.find(e => e.id === id);
-        if (ex && ex.image) { fullSizeImage.src = ex.image; openModal(imageViewerModal); }
+        const card = t.closest('.active-routine-exercise');
+        if (!card) return;
+        const instanceId = parseFloat(card.dataset.instanceId);
+        if (t.matches('.start-reps-set-btn, .start-stopwatch-modal-btn')) {
+            const dateKey = getFormattedDate(currentDate);
+            const workoutData = allData.history[dateKey];
+            const progress = workoutData.progress.find(p => p.instanceId === instanceId);
+            if(t.matches('.start-reps-set-btn')){
+                if (!progress.loggedData) progress.loggedData = [];
+                const exerciseData = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId);
+                progress.loggedData.push({ reps: exerciseData.reps, weight: '' });
+                progress.setsCompleted++;
+                handleSetCompletion(instanceId);
+            } else {
+                 openStopwatchModal(instanceId);
+            }
+        } else if (t.matches('.timer-toggle, .timer-interval-btn')) {
+            const progress = allData.history[getFormattedDate(currentDate)].progress.find(p => p.instanceId === instanceId);
+            if(t.matches('.timer-toggle')) progress.timer.enabled = t.checked;
+            else progress.timer.duration = parseInt(t.dataset.time);
+            saveDataToLocalStorage(); renderWorkoutPage();
+        } else if (t.classList.contains('db-item-thumbnail')) {
+            const id = parseInt(t.dataset.id);
+            const ex = allData.exerciseDatabase.find(e => e.id === id);
+            if (ex && ex.image) { fullSizeImage.src = ex.image; openModal(imageViewerModal); }
+        }
     }
 });
 
 // MODAL LOGIC (SWAP, EDIT)
-swapExerciseForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const newExerciseId = parseInt(swapExerciseSelect.value);
-    if (isNaN(newExerciseId) || !swipeState.instanceIdToSwap) return;
-    
-    const dateKey = getFormattedDate(currentDate);
-    const workoutData = allData.history[dateKey];
-    const exerciseIndex = workoutData.routine.exercises.findIndex(ex => ex.instanceId === swipeState.instanceIdToSwap);
-    const progressIndex = workoutData.progress.findIndex(p => p.instanceId === swipeState.instanceIdToSwap);
-
-    if (exerciseIndex === -1) return;
-
-    const originalExercise = workoutData.routine.exercises[exerciseIndex];
-    const newExerciseDbEntry = allData.exerciseDatabase.find(dbEx => dbEx.id === newExerciseId);
-
-    const newWorkoutExercise = {
-        ...newExerciseDbEntry,
-        sets: originalExercise.sets,
-        reps: newExerciseDbEntry.trackType === 'reps' ? (originalExercise.reps || '8-12') : undefined,
-        duration: newExerciseDbEntry.trackType === 'time' ? (originalExercise.duration || 60) : undefined,
-        trackType: newExerciseDbEntry.trackType,
-        instanceId: Date.now() + Math.random(),
-        exerciseId: newExerciseId
-    };
-
-    workoutData.routine.exercises.splice(exerciseIndex, 1, newWorkoutExercise);
-    
-    if (progressIndex > -1) {
-        workoutData.progress[progressIndex].instanceId = newWorkoutExercise.instanceId;
-    }
-
-    saveDataToLocalStorage();
-    renderWorkoutPage();
-    closeModal(swapExerciseModal);
-    swipeState.instanceIdToSwap = null;
-});
+swapExerciseForm.addEventListener('submit', e => { e.preventDefault(); const newExerciseId = parseInt(swapExerciseSelect.value); if (isNaN(newExerciseId) || !swipeState.instanceIdToSwap) return; const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; const exerciseIndex = workoutData.routine.exercises.findIndex(ex => ex.instanceId === swipeState.instanceIdToSwap); const progressIndex = workoutData.progress.findIndex(p => p.instanceId === swipeState.instanceIdToSwap); if (exerciseIndex === -1) return; const originalExercise = workoutData.routine.exercises[exerciseIndex]; const newExerciseDbEntry = allData.exerciseDatabase.find(dbEx => dbEx.id === newExerciseId); const newWorkoutExercise = { ...newExerciseDbEntry, sets: originalExercise.sets, reps: newExerciseDbEntry.trackType === 'reps' ? (originalExercise.reps || '8-12') : undefined, duration: newExerciseDbEntry.trackType === 'time' ? (originalExercise.duration || 60) : undefined, trackType: newExerciseDbEntry.trackType, instanceId: Date.now() + Math.random(), exerciseId: newExerciseId }; workoutData.routine.exercises.splice(exerciseIndex, 1, newWorkoutExercise); if (progressIndex > -1) { workoutData.progress[progressIndex].instanceId = newWorkoutExercise.instanceId; } saveDataToLocalStorage(); renderWorkoutPage(); closeModal(swapExerciseModal); swipeState.instanceIdToSwap = null; });
 cancelSwapBtn.addEventListener('click', () => closeModal(swapExerciseModal));
 
-editWorkoutExerciseForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const instanceId = swipeState.instanceIdToEdit;
-    if (!instanceId) return;
-
-    const workoutData = allData.history[getFormattedDate(currentDate)];
-    const exercise = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId);
-
-    if (exercise) {
-        if (exercise.trackType === 'time') {
-            const newSets = parseInt(editTimeSetsInput.value);
-            const newDuration = parseInt(editDurationInput.value);
-            if (newSets > 0) exercise.sets = newSets;
-            if (newDuration > 0) exercise.duration = newDuration;
-        } else {
-            const newSets = parseInt(editSetsInput.value);
-            const newReps = editRepsInput.value.trim();
-            if (newSets > 0) exercise.sets = newSets;
-            if (newReps) exercise.reps = newReps;
-        }
-        saveDataToLocalStorage();
-        renderWorkoutPage();
-        closeModal(editWorkoutExerciseModal);
-        swipeState.instanceIdToEdit = null;
-    }
-});
+editWorkoutExerciseForm.addEventListener('submit', e => { e.preventDefault(); const instanceId = swipeState.instanceIdToEdit; if (!instanceId) return; const workoutData = allData.history[getFormattedDate(currentDate)]; const exercise = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId); if (exercise) { if (exercise.trackType === 'time') { const newSets = parseInt(editTimeSetsInput.value); const newDuration = parseInt(editDurationInput.value); if (newSets > 0) exercise.sets = newSets; if (newDuration > 0) exercise.duration = newDuration; } else { const newSets = parseInt(editSetsInput.value); const newReps = editRepsInput.value.trim(); if (newSets > 0) exercise.sets = newSets; if (newReps) exercise.reps = newReps; } saveDataToLocalStorage(); renderWorkoutPage(); closeModal(editWorkoutExerciseModal); swipeState.instanceIdToEdit = null; } });
 cancelEditBtn.addEventListener('click', () => closeModal(editWorkoutExerciseModal));
 
 
@@ -777,7 +730,7 @@ exportDataBtn.addEventListener('click', () => { exportDataToFile(); actionsDropd
 importDataBtn.addEventListener('click', () => { fileLoaderInput.click(); actionsDropdown.classList.add('hidden'); });
 fileLoaderInput.addEventListener('change', importDataFromFile);
 
-// --- 7. INITIALIZE APP ---
+// --- 8. INITIALIZE APP ---
 function initializeApp() {
     loadDataFromLocalStorage();
     showPage('workout-page');
