@@ -91,7 +91,7 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .header-actions .text-btn { color: var(--color-text-secondary); }
 .header-actions .text-btn:hover { color: var(--color-danger); }
 
-/* --- [NEW] ACTIVE ROUTINE SWIPE STYLES --- */
+/* --- ACTIVE ROUTINE SWIPE STYLES --- */
 .active-routine-exercise {
     padding: 0;
     overflow: hidden;
@@ -139,14 +139,15 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
     fill: currentColor;
 }
 .swipe-swap-btn { background-color: #3B82F6; }
+.swipe-edit-btn { background-color: var(--color-primary); } /* NEW */
 .swipe-delete-btn { background-color: var(--color-danger); }
-/* --- END NEW SWIPE STYLES --- */
+
 
 .exercise-content { flex-grow: 1; display: flex; flex-direction: column; }
 .exercise-header { display: flex; justify-content: center; align-items: center; margin-bottom: 12px; text-align: center; }
 .exercise-actions { margin-top: auto; }
 
-/* -- NEW & UPDATED WORKOUT SUMMARY STYLES -- */
+/* -- WORKOUT SUMMARY STYLES -- */
 #active-routine-display .workout-summary-card { max-width: 600px; margin-left: auto; margin-right: auto; }
 .workout-summary-card { padding: 0; }
 .summary-header { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 16px; border-bottom: 1px solid var(--color-border); text-align: center; }

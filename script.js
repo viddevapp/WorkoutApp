@@ -8,7 +8,7 @@ let countdownInitialDuration = 0;
 let stopwatchIntervalId = null;
 let currentStopwatchInstanceId = null;
 let routineBuilderSortable = null;
-let swipeState = { instanceIdToSwap: null, openCardContent: null };
+let swipeState = { instanceIdToSwap: null, openCardContent: null, instanceIdToEdit: null };
 
 let allData = {
     exerciseDatabase: [],
@@ -31,6 +31,7 @@ const stopwatchModal = document.getElementById('stopwatch-modal'), stopwatchExer
 const countdownModal = document.getElementById('countdown-modal'), countdownTimerDisplay = document.getElementById('countdown-timer-display'), countdownLabel = document.getElementById('countdown-label'), countdownNextExerciseInfo = document.getElementById('countdown-next-exercise-info'), countdownNextExerciseName = document.getElementById('countdown-next-exercise-name'), countdownNextExerciseDetails = document.getElementById('countdown-next-exercise-details'), countdownProgressCircle = document.querySelector('.timer-progress');
 const workoutCompleteModal = document.getElementById('workout-complete-modal'), workoutTotalTimeDisplay = document.getElementById('workout-total-time'), closeCompleteModalBtn = document.getElementById('close-complete-modal-btn');
 const swapExerciseModal = document.getElementById('swap-exercise-modal'), swapExerciseForm = document.getElementById('swap-exercise-form'), swapExerciseSelect = document.getElementById('swap-exercise-select'), cancelSwapBtn = document.getElementById('cancel-swap-btn');
+const editWorkoutExerciseModal = document.getElementById('edit-workout-exercise-modal'), editWorkoutExerciseForm = document.getElementById('edit-workout-exercise-form'), editModalTitle = document.getElementById('edit-modal-title'), editRepsBasedInputs = document.getElementById('edit-reps-based-inputs'), editTimeBasedInputs = document.getElementById('edit-time-based-inputs'), editSetsInput = document.getElementById('edit-sets-input'), editRepsInput = document.getElementById('edit-reps-input'), editTimeSetsInput = document.getElementById('edit-time-sets-input'), editDurationInput = document.getElementById('edit-duration-input'), cancelEditBtn = document.getElementById('cancel-edit-btn');
 
 const circleCircumference = 2 * Math.PI * 54;
 
@@ -308,8 +309,12 @@ function renderWorkoutPage() {
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M14.5 1.5a.5.5 0 0 1 .5.5v11.5a.5.5 0 0 1-1 0V2.707l-2.646 2.647a.5.5 0 0 1-.708-.708l3.5-3.5a.5.5 0 0 1 .708 0zM5.5 18.5a.5.5 0 0 1-.5-.5V6.5a.5.5 0 0 1 1 0v11.293l2.646-2.647a.5.5 0 0 1 .708.708l-3.5 3.5a.5.5 0 0 1-.708 0z"/></svg>
                     <span>Swap</span>
                 </button>
+                <button class="swipe-action-btn swipe-edit-btn" data-instance-id="${exercise.instanceId}">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13.854 2.146a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.708 0l-2.5-2.5a.5.5 0 1 1 .708-.708L3.5 11.293l9.646-9.647a.5.5 0 0 1 .708 0zM12.5 4.5a.5.5 0 0 0-1 0v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 0-1h-1z"/></svg>
+                    <span>Edit</span>
+                </button>
                 <button class="swipe-action-btn swipe-delete-btn" data-instance-id="${exercise.instanceId}">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M6.5 1h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zM8 4a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4zm4 0a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 12 4zM2.5 4a.5.5 0 0 0-.5.5v12a.5.5 0 0 0 .5.5h15a.5.5 0 0 0 .5-.5v-12a.5.5 0 0 0-.5-.5H16v-1a.5.5 0 0 0-.5-.5h-11a.5.5 0 0 0-.5.5v1H2.5zm1 1h13v11h-13V5z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M6 2a2 2 0 0 0-2 2v1H2.5a.5.5 0 0 0 0 1h1V15a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V6h1a.5.5 0 0 0 0-1H14V4a2 2 0 0 0-2-2H6zm1 2h4v1H7V4zM5 6h8v9H5V6z"/></svg>
                     <span>Delete</span>
                 </button>
             </div>`;
@@ -491,11 +496,12 @@ activeRoutineInfo.addEventListener('click', e => {
     }
 });
 
-// --- [REVISED] SWIPE HANDLING ---
+// --- SWIPE HANDLING ---
 let touchStartX = 0;
 let touchCurrentX = 0;
 let swipeTarget = null;
 let isSwiping = false;
+const SWIPE_ACTION_WIDTH = 240; // 3 buttons * 80px each
 
 function resetSwipeState() {
     if (swipeState.openCardContent) {
@@ -511,23 +517,28 @@ function resetSwipeState() {
 activeRoutineDisplay.addEventListener('touchstart', e => {
     const target = e.target.closest('.swipe-content');
     if (!target) return;
-    // If a different card is already open, close it before starting a new swipe.
     if(swipeState.openCardContent && swipeState.openCardContent !== target) {
        resetSwipeState();
     }
     swipeTarget = target;
     touchStartX = e.touches[0].clientX;
-    swipeTarget.style.transition = 'none'; // Disable transition for direct touch control
+    swipeTarget.style.transition = 'none';
 }, { passive: true });
 
 activeRoutineDisplay.addEventListener('touchmove', e => {
     if (!swipeTarget) return;
     touchCurrentX = e.touches[0].clientX;
     const diffX = touchCurrentX - touchStartX;
-    if (diffX < 0) { // Only allow left swipe
-        isSwiping = true;
-        const transformX = Math.max(-160, diffX); // Max swipe distance is 160px (width of two buttons)
-        swipeTarget.style.transform = `translateX(${transformX}px)`;
+    isSwiping = true;
+
+    if (swipeState.openCardContent === swipeTarget) { // If card is open, allow right swipe to close
+        const newX = Math.min(0, -SWIPE_ACTION_WIDTH + diffX);
+        swipeTarget.style.transform = `translateX(${newX}px)`;
+    } else { // If card is closed, only allow left swipe
+        if (diffX < 0) {
+            const transformX = Math.max(-SWIPE_ACTION_WIDTH, diffX);
+            swipeTarget.style.transform = `translateX(${transformX}px)`;
+        }
     }
 }, { passive: true });
 
@@ -538,15 +549,23 @@ activeRoutineDisplay.addEventListener('touchend', e => {
     };
     
     const diffX = touchCurrentX - touchStartX;
-    const threshold = -60; // If swiped more than this, snap open
-
-    swipeTarget.style.transition = 'transform 0.3s ease-out'; // Re-enable transition for snapping
-    if (diffX < threshold) {
-        swipeTarget.style.transform = 'translateX(-160px)';
-        swipeState.openCardContent = swipeTarget;
+    swipeTarget.style.transition = 'transform 0.3s ease-out';
+    
+    const wasOpen = swipeState.openCardContent === swipeTarget;
+    if (wasOpen) {
+        if (diffX > 60) { // If swiped right enough, close
+            swipeTarget.style.transform = 'translateX(0px)';
+            swipeState.openCardContent = null;
+        } else { // Otherwise, snap back to open
+            swipeTarget.style.transform = `translateX(${-SWIPE_ACTION_WIDTH}px)`;
+        }
     } else {
-        swipeTarget.style.transform = 'translateX(0px)';
-        swipeState.openCardContent = null;
+        if (diffX < -60) { // If swiped left enough, open
+            swipeTarget.style.transform = `translateX(${-SWIPE_ACTION_WIDTH}px)`;
+            swipeState.openCardContent = swipeTarget;
+        } else { // Otherwise, snap back to closed
+            swipeTarget.style.transform = 'translateX(0px)';
+        }
     }
     swipeTarget = null;
     isSwiping = false;
@@ -555,8 +574,7 @@ activeRoutineDisplay.addEventListener('touchend', e => {
 
 activeRoutineDisplay.addEventListener('click', e => {
     const t = e.target;
-    // Prevent click actions on the card itself if a swipe was just completed
-    if (isSwiping || (touchStartX !== touchCurrentX)) {
+    if (isSwiping || (touchStartX !== 0 && touchStartX !== touchCurrentX)) {
         touchStartX = 0;
         touchCurrentX = 0;
         if (t.closest('.swipe-content')) {
@@ -564,8 +582,7 @@ activeRoutineDisplay.addEventListener('click', e => {
         }
     }
     
-    // Close any open swipe card if clicking anywhere that isn't an action button
-     if (swipeState.openCardContent && !t.closest('.swipe-actions')) {
+    if (swipeState.openCardContent && !t.closest('.swipe-actions')) {
        resetSwipeState();
     }
 
@@ -601,9 +618,10 @@ activeRoutineDisplay.addEventListener('click', e => {
         return;
     }
     
-    // SWAP AND DELETE ACTIONS
+    // SWIPE AND DELETE ACTIONS
     const swapBtn = t.closest('.swipe-swap-btn');
     const deleteBtn = t.closest('.swipe-delete-btn');
+    const editBtn = t.closest('.swipe-edit-btn');
 
     if (deleteBtn) {
         if (confirm("Are you sure you want to delete this exercise from today's workout?")) {
@@ -613,12 +631,33 @@ activeRoutineDisplay.addEventListener('click', e => {
             workoutData.routine.exercises = workoutData.routine.exercises.filter(ex => ex.instanceId !== instanceId);
             workoutData.progress = workoutData.progress.filter(p => p.instanceId !== instanceId);
             saveDataToLocalStorage();
-            renderWorkoutPage(); // Will also reset swipe state
+            renderWorkoutPage();
         }
     } else if (swapBtn) {
         swipeState.instanceIdToSwap = parseFloat(swapBtn.dataset.instanceId);
         populateExerciseDropdown(swapExerciseSelect);
         openModal(swapExerciseModal);
+    } else if (editBtn) {
+        const instanceId = parseFloat(editBtn.dataset.instanceId);
+        swipeState.instanceIdToEdit = instanceId;
+        const workoutData = allData.history[getFormattedDate(currentDate)];
+        const exercise = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId);
+
+        if (exercise) {
+            editModalTitle.textContent = `Edit ${exercise.name}`;
+            if (exercise.trackType === 'time') {
+                editTimeBasedInputs.classList.remove('hidden');
+                editRepsBasedInputs.classList.add('hidden');
+                editTimeSetsInput.value = exercise.sets;
+                editDurationInput.value = exercise.duration;
+            } else {
+                editRepsBasedInputs.classList.remove('hidden');
+                editTimeBasedInputs.classList.add('hidden');
+                editSetsInput.value = exercise.sets;
+                editRepsInput.value = exercise.reps;
+            }
+            openModal(editWorkoutExerciseModal);
+        }
     }
 
 
@@ -655,7 +694,7 @@ activeRoutineDisplay.addEventListener('click', e => {
     }
 });
 
-// SWAP MODAL LOGIC
+// MODAL LOGIC (SWAP, EDIT)
 swapExerciseForm.addEventListener('submit', e => {
     e.preventDefault();
     const newExerciseId = parseInt(swapExerciseSelect.value);
@@ -671,21 +710,18 @@ swapExerciseForm.addEventListener('submit', e => {
     const originalExercise = workoutData.routine.exercises[exerciseIndex];
     const newExerciseDbEntry = allData.exerciseDatabase.find(dbEx => dbEx.id === newExerciseId);
 
-    // Create a new exercise object for the workout, preserving the original's structure
     const newWorkoutExercise = {
-        ...newExerciseDbEntry, // name, image, type from DB
+        ...newExerciseDbEntry,
         sets: originalExercise.sets,
         reps: newExerciseDbEntry.trackType === 'reps' ? (originalExercise.reps || '8-12') : undefined,
         duration: newExerciseDbEntry.trackType === 'time' ? (originalExercise.duration || 60) : undefined,
         trackType: newExerciseDbEntry.trackType,
-        instanceId: Date.now() + Math.random(), // New unique ID for this instance
+        instanceId: Date.now() + Math.random(),
         exerciseId: newExerciseId
     };
 
-    // Replace the exercise
     workoutData.routine.exercises.splice(exerciseIndex, 1, newWorkoutExercise);
     
-    // Update the corresponding progress item with the new instanceId
     if (progressIndex > -1) {
         workoutData.progress[progressIndex].instanceId = newWorkoutExercise.instanceId;
     }
@@ -696,6 +732,34 @@ swapExerciseForm.addEventListener('submit', e => {
     swipeState.instanceIdToSwap = null;
 });
 cancelSwapBtn.addEventListener('click', () => closeModal(swapExerciseModal));
+
+editWorkoutExerciseForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const instanceId = swipeState.instanceIdToEdit;
+    if (!instanceId) return;
+
+    const workoutData = allData.history[getFormattedDate(currentDate)];
+    const exercise = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId);
+
+    if (exercise) {
+        if (exercise.trackType === 'time') {
+            const newSets = parseInt(editTimeSetsInput.value);
+            const newDuration = parseInt(editDurationInput.value);
+            if (newSets > 0) exercise.sets = newSets;
+            if (newDuration > 0) exercise.duration = newDuration;
+        } else {
+            const newSets = parseInt(editSetsInput.value);
+            const newReps = editRepsInput.value.trim();
+            if (newSets > 0) exercise.sets = newSets;
+            if (newReps) exercise.reps = newReps;
+        }
+        saveDataToLocalStorage();
+        renderWorkoutPage();
+        closeModal(editWorkoutExerciseModal);
+        swipeState.instanceIdToEdit = null;
+    }
+});
+cancelEditBtn.addEventListener('click', () => closeModal(editWorkoutExerciseModal));
 
 
 stopwatchActionBtn.addEventListener('click', () => { if (stopwatchActionBtn.classList.contains('log-state')) { logStopwatchSet(); } else { stopStopwatch(); } });
