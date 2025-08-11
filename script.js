@@ -389,7 +389,7 @@ const sortableOptions = {
     delayOnTouchOnly: true
 };
 
-function initRoutineBuilderSortable() { if (routineBuilderSortable) routineBuilderSortable.destroy(); routineBuilderSortable = new Sortable(routineBuilderList, { ...sortableOptions, onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); } }); }
+function initRoutineBuilderSortable() { if (routineBuilderSortable) routineBuilderSortable.destroy(); routineBuilderSortable = new Sortable(routineBuilderList, { ...sortableOptions, handle:'.routine-builder-item', onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); } }); }
 function initDailyWorkoutSortable() { if (dailyWorkoutSortable) dailyWorkoutSortable.destroy(); const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; if (!workoutData) return; dailyWorkoutSortable = new Sortable(activeRoutineDisplay, { ...sortableOptions, onEnd: (evt) => { const movedItem = workoutData.routine.exercises.splice(evt.oldIndex, 1)[0]; workoutData.routine.exercises.splice(evt.newIndex, 0, movedItem); const movedProgress = workoutData.progress.splice(evt.oldIndex, 1)[0]; workoutData.progress.splice(evt.newIndex, 0, movedProgress); saveDataToLocalStorage(); renderWorkoutPage(); } }); }
 function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesSortable.destroy(); savedRoutinesSortable = new Sortable(savedRoutinesList, { ...sortableOptions, onEnd: (evt) => { const movedItem = allData.routines.splice(evt.oldIndex, 1)[0]; allData.routines.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } }); }
 
@@ -549,9 +549,10 @@ activeRoutineInfo.addEventListener('click', e => {
     if (t.id === 'reset-workout-btn') { if (confirm("Are you sure you want to reset this workout? Your progress for today will be lost.")) { const dateKey = getFormattedDate(currentDate); if (allData.history[dateKey]) { delete allData.history[dateKey]; closeStopwatchModal(true); saveDataToLocalStorage(); renderWorkoutPage(); } } }
 });
 
-// SWIPE HANDLING
-let touchStartX = 0; let touchCurrentX = 0; let swipeTarget = null; let isSwiping = false;
-function resetSwipeState() { if (swipeState.openCardContent) { swipeState.openCardContent.style.transform = 'translateX(0px)'; } touchStartX = 0; touchCurrentX = 0; swipeTarget = null; isSwiping = false; swipeState.openCardContent = null; }
+// --- [REVISED] SWIPE HANDLING ---
+let touchStartX = 0, touchStartY = 0, touchCurrentX = 0;
+let swipeTarget = null, isSwiping = false, swipeDirection = null;
+function resetSwipeState() { if (swipeState.openCardContent) { swipeState.openCardContent.style.transform = 'translateX(0px)'; } touchStartX = 0; touchStartY = 0; touchCurrentX = 0; swipeTarget = null; isSwiping = false; swipeDirection = null; swipeState.openCardContent = null; }
 
 appContainer.addEventListener('touchstart', e => {
     const target = e.target.closest('.swipe-content');
@@ -559,6 +560,7 @@ appContainer.addEventListener('touchstart', e => {
     if(swipeState.openCardContent && swipeState.openCardContent !== target) { resetSwipeState(); }
     swipeTarget = target;
     touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
     swipeTarget.style.transition = 'none';
 }, { passive: true });
 
@@ -566,22 +568,35 @@ appContainer.addEventListener('touchmove', e => {
     if (!swipeTarget) return;
     touchCurrentX = e.touches[0].clientX;
     const diffX = touchCurrentX - touchStartX;
-    isSwiping = true;
-    const SWIPE_WIDTH = swipeTarget.closest('#active-routine-display') ? SWIPE_ACTION_WIDTH_WORKOUT : SWIPE_ACTION_WIDTH;
-
-    if (swipeState.openCardContent === swipeTarget) {
-        const newX = Math.min(0, -SWIPE_WIDTH + diffX);
-        swipeTarget.style.transform = `translateX(${newX}px)`;
-    } else {
-        if (diffX < 0) {
-            const transformX = Math.max(-SWIPE_WIDTH, diffX);
-            swipeTarget.style.transform = `translateX(${transformX}px)`;
+    const diffY = e.touches[0].clientY - touchStartY;
+    
+    if (!swipeDirection) {
+        if (Math.abs(diffX) > 10 && Math.abs(diffX) > Math.abs(diffY)) {
+            swipeDirection = 'horizontal';
+        } else if (Math.abs(diffY) > 10) {
+            swipeDirection = 'vertical';
         }
     }
-}, { passive: true });
+
+    if (swipeDirection === 'horizontal') {
+        e.preventDefault(); // Prevent vertical scroll
+        isSwiping = true;
+        const SWIPE_WIDTH = swipeTarget.closest('#active-routine-display') ? SWIPE_ACTION_WIDTH_WORKOUT : SWIPE_ACTION_WIDTH;
+        if (swipeState.openCardContent === swipeTarget) {
+            const newX = Math.min(0, -SWIPE_WIDTH + diffX);
+            swipeTarget.style.transform = `translateX(${newX}px)`;
+        } else {
+            if (diffX < 0) {
+                const transformX = Math.max(-SWIPE_WIDTH, diffX);
+                swipeTarget.style.transform = `translateX(${transformX}px)`;
+            }
+        }
+    }
+}, { passive: false });
+
 
 appContainer.addEventListener('touchend', e => {
-    if (!swipeTarget || !isSwiping) { swipeTarget = null; return; };
+    if (!swipeTarget || !isSwiping) { resetSwipeState(); return; };
     
     const diffX = touchCurrentX - touchStartX;
     swipeTarget.style.transition = 'transform 0.3s ease-out';
@@ -595,7 +610,7 @@ appContainer.addEventListener('touchend', e => {
         if (diffX < -60) { swipeTarget.style.transform = `translateX(${-SWIPE_WIDTH}px)`; swipeState.openCardContent = swipeTarget; } 
         else { swipeTarget.style.transform = 'translateX(0px)'; }
     }
-    swipeTarget = null; isSwiping = false;
+    swipeTarget = null; isSwiping = false; swipeDirection = null;
 });
 
 
