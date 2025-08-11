@@ -8,7 +8,7 @@ let countdownInitialDuration = 0;
 let stopwatchIntervalId = null;
 let currentStopwatchInstanceId = null;
 let routineBuilderSortable = null;
-let swapState = { instanceIdToSwap: null, openCard: null };
+let swipeState = { instanceIdToSwap: null, openCardContent: null };
 
 let allData = {
     exerciseDatabase: [],
@@ -281,33 +281,37 @@ function renderWorkoutPage() {
         const intervalButtonsHTML = intervals.map(time => `<button class="timer-interval-btn ${progress.timer.duration === time ? 'selected' : ''}" data-time="${time}" ${!progress.timer.enabled ? 'disabled' : ''}>${time}s</button>`).join('');
         
         itemDiv.innerHTML = `
-            <div class="swipe-container">
-                <div class="swipe-content">
-                    ${exercise.image ? `<img src="${exercise.image}" alt="${exercise.name}" class="db-item-thumbnail" data-id="${exercise.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
-                    <div class="exercise-content">
-                        <div class="exercise-header">
-                            <div class="exercise-item-main">
-                                <span class="exercise-item-name">${exercise.name}</span>
-                                <small class="exercise-item-stats">${stats}</small>
-                            </div>
-                        </div>
-                        ${trackingUI}
-                        <div class="timer-controls">
-                            <div class="timer-toggle-area">
-                                <label for="timer-toggle-${exercise.instanceId}">Break Timer</label>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" class="timer-toggle" id="timer-toggle-${exercise.instanceId}" ${progress.timer.enabled ? 'checked' : ''}>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="timer-intervals">${intervalButtonsHTML}</div>
+            <div class="swipe-content">
+                ${exercise.image ? `<img src="${exercise.image}" alt="${exercise.name}" class="db-item-thumbnail" data-id="${exercise.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
+                <div class="exercise-content">
+                    <div class="exercise-header">
+                        <div class="exercise-item-main">
+                            <span class="exercise-item-name">${exercise.name}</span>
+                            <small class="exercise-item-stats">${stats}</small>
                         </div>
                     </div>
+                    ${trackingUI}
+                    <div class="timer-controls">
+                        <div class="timer-toggle-area">
+                            <label for="timer-toggle-${exercise.instanceId}">Break Timer</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" class="timer-toggle" id="timer-toggle-${exercise.instanceId}" ${progress.timer.enabled ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="timer-intervals">${intervalButtonsHTML}</div>
+                    </div>
                 </div>
-                <div class="swipe-actions">
-                    <button class="swipe-action-btn swap-btn" data-instance-id="${exercise.instanceId}">Swap</button>
-                    <button class="swipe-action-btn delete-workout-btn" data-instance-id="${exercise.instanceId}">Delete</button>
-                </div>
+            </div>
+            <div class="swipe-actions">
+                <button class="swipe-action-btn swipe-swap-btn" data-instance-id="${exercise.instanceId}">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M14.5 1.5a.5.5 0 0 1 .5.5v11.5a.5.5 0 0 1-1 0V2.707l-2.646 2.647a.5.5 0 0 1-.708-.708l3.5-3.5a.5.5 0 0 1 .708 0zM5.5 18.5a.5.5 0 0 1-.5-.5V6.5a.5.5 0 0 1 1 0v11.293l2.646-2.647a.5.5 0 0 1 .708.708l-3.5 3.5a.5.5 0 0 1-.708 0z"/></svg>
+                    <span>Swap</span>
+                </button>
+                <button class="swipe-action-btn swipe-delete-btn" data-instance-id="${exercise.instanceId}">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M6.5 1h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zM8 4a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4zm4 0a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 12 4zM2.5 4a.5.5 0 0 0-.5.5v12a.5.5 0 0 0 .5.5h15a.5.5 0 0 0 .5-.5v-12a.5.5 0 0 0-.5-.5H16v-1a.5.5 0 0 0-.5-.5h-11a.5.5 0 0 0-.5.5v1H2.5zm1 1h13v11h-13V5z"/></svg>
+                    <span>Delete</span>
+                </button>
             </div>`;
         activeRoutineDisplay.appendChild(itemDiv);
     });
@@ -487,32 +491,33 @@ activeRoutineInfo.addEventListener('click', e => {
     }
 });
 
-// --- SWIPE HANDLING ---
+// --- [REVISED] SWIPE HANDLING ---
 let touchStartX = 0;
 let touchCurrentX = 0;
 let swipeTarget = null;
 let isSwiping = false;
 
 function resetSwipeState() {
-    if (swapState.openCard) {
-        swapState.openCard.style.transform = 'translateX(0px)';
+    if (swipeState.openCardContent) {
+        swipeState.openCardContent.style.transform = 'translateX(0px)';
     }
     touchStartX = 0;
     touchCurrentX = 0;
     swipeTarget = null;
     isSwiping = false;
-    swapState.openCard = null;
+    swipeState.openCardContent = null;
 }
 
 activeRoutineDisplay.addEventListener('touchstart', e => {
     const target = e.target.closest('.swipe-content');
     if (!target) return;
-    if(swapState.openCard && swapState.openCard !== target) {
+    // If a different card is already open, close it before starting a new swipe.
+    if(swipeState.openCardContent && swipeState.openCardContent !== target) {
        resetSwipeState();
     }
     swipeTarget = target;
     touchStartX = e.touches[0].clientX;
-    swipeTarget.style.transition = 'none'; // Disable transition during swipe
+    swipeTarget.style.transition = 'none'; // Disable transition for direct touch control
 }, { passive: true });
 
 activeRoutineDisplay.addEventListener('touchmove', e => {
@@ -521,7 +526,7 @@ activeRoutineDisplay.addEventListener('touchmove', e => {
     const diffX = touchCurrentX - touchStartX;
     if (diffX < 0) { // Only allow left swipe
         isSwiping = true;
-        const transformX = Math.max(-160, diffX); // Max swipe distance
+        const transformX = Math.max(-160, diffX); // Max swipe distance is 160px (width of two buttons)
         swipeTarget.style.transform = `translateX(${transformX}px)`;
     }
 }, { passive: true });
@@ -533,15 +538,15 @@ activeRoutineDisplay.addEventListener('touchend', e => {
     };
     
     const diffX = touchCurrentX - touchStartX;
-    const threshold = -80; // If swiped more than this, open actions
+    const threshold = -60; // If swiped more than this, snap open
 
-    swipeTarget.style.transition = 'transform 0.3s ease-out'; // Re-enable transition
+    swipeTarget.style.transition = 'transform 0.3s ease-out'; // Re-enable transition for snapping
     if (diffX < threshold) {
         swipeTarget.style.transform = 'translateX(-160px)';
-        swapState.openCard = swipeTarget;
+        swipeState.openCardContent = swipeTarget;
     } else {
         swipeTarget.style.transform = 'translateX(0px)';
-        swapState.openCard = null;
+        swipeState.openCardContent = null;
     }
     swipeTarget = null;
     isSwiping = false;
@@ -550,14 +555,17 @@ activeRoutineDisplay.addEventListener('touchend', e => {
 
 activeRoutineDisplay.addEventListener('click', e => {
     const t = e.target;
-    // Prevent click actions if a swipe was just completed
-    if (isSwiping || (touchCurrentX !== 0 && touchStartX !== touchCurrentX)) {
+    // Prevent click actions on the card itself if a swipe was just completed
+    if (isSwiping || (touchStartX !== touchCurrentX)) {
         touchStartX = 0;
         touchCurrentX = 0;
-        return;
+        if (t.closest('.swipe-content')) {
+            e.stopPropagation();
+        }
     }
-    // Close any open swipe card if clicking elsewhere
-    if (swapState.openCard && !swapState.openCard.contains(t) && !t.closest('.swipe-actions')) {
+    
+    // Close any open swipe card if clicking anywhere that isn't an action button
+     if (swipeState.openCardContent && !t.closest('.swipe-actions')) {
        resetSwipeState();
     }
 
@@ -594,18 +602,21 @@ activeRoutineDisplay.addEventListener('click', e => {
     }
     
     // SWAP AND DELETE ACTIONS
-    if (t.classList.contains('delete-workout-btn')) {
+    const swapBtn = t.closest('.swipe-swap-btn');
+    const deleteBtn = t.closest('.swipe-delete-btn');
+
+    if (deleteBtn) {
         if (confirm("Are you sure you want to delete this exercise from today's workout?")) {
-            const instanceId = parseFloat(t.dataset.instanceId);
+            const instanceId = parseFloat(deleteBtn.dataset.instanceId);
             const dateKey = getFormattedDate(currentDate);
             const workoutData = allData.history[dateKey];
             workoutData.routine.exercises = workoutData.routine.exercises.filter(ex => ex.instanceId !== instanceId);
             workoutData.progress = workoutData.progress.filter(p => p.instanceId !== instanceId);
             saveDataToLocalStorage();
-            renderWorkoutPage();
+            renderWorkoutPage(); // Will also reset swipe state
         }
-    } else if (t.classList.contains('swap-btn')) {
-        swapState.instanceIdToSwap = parseFloat(t.dataset.instanceId);
+    } else if (swapBtn) {
+        swipeState.instanceIdToSwap = parseFloat(swapBtn.dataset.instanceId);
         populateExerciseDropdown(swapExerciseSelect);
         openModal(swapExerciseModal);
     }
@@ -648,12 +659,12 @@ activeRoutineDisplay.addEventListener('click', e => {
 swapExerciseForm.addEventListener('submit', e => {
     e.preventDefault();
     const newExerciseId = parseInt(swapExerciseSelect.value);
-    if (isNaN(newExerciseId) || !swapState.instanceIdToSwap) return;
+    if (isNaN(newExerciseId) || !swipeState.instanceIdToSwap) return;
     
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
-    const exerciseIndex = workoutData.routine.exercises.findIndex(ex => ex.instanceId === swapState.instanceIdToSwap);
-    const progressIndex = workoutData.progress.findIndex(p => p.instanceId === swapState.instanceIdToSwap);
+    const exerciseIndex = workoutData.routine.exercises.findIndex(ex => ex.instanceId === swipeState.instanceIdToSwap);
+    const progressIndex = workoutData.progress.findIndex(p => p.instanceId === swipeState.instanceIdToSwap);
 
     if (exerciseIndex === -1) return;
 
@@ -682,7 +693,7 @@ swapExerciseForm.addEventListener('submit', e => {
     saveDataToLocalStorage();
     renderWorkoutPage();
     closeModal(swapExerciseModal);
-    swapState.instanceIdToSwap = null;
+    swipeState.instanceIdToSwap = null;
 });
 cancelSwapBtn.addEventListener('click', () => closeModal(swapExerciseModal));
 
