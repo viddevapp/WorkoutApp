@@ -2,25 +2,196 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- The "viewport-fit=cover" part is the key addition here -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Web Drum Machine</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Workout Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-</head><body>
-    <div class="drum-machine">
-        <div class="pad"></div>
-        <div class="pad"></div>
-        <div class="pad"></div>
-        <div class="pad"></div>
-        <div class="pad"></div>
-        <div class="pad"></div>
-        <div class="pad"></div>
-        <div class="pad"></div>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div id="app-container">
+        <!-- Main Navigation -->
+        <nav>
+            <div class="nav-tabs">
+                <button id="nav-workout" class="nav-btn active">Daily Workout</button>
+                <button id="nav-routines" class="nav-btn">Routines</button>
+                <button id="nav-exercises" class="nav-btn">Exercise List</button>
+            </div>
+            <div class="nav-actions">
+                <div id="actions-menu-container">
+                    <button id="actions-menu-btn" aria-label="Actions Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button>
+                    <div id="actions-dropdown" class="hidden"><button id="import-data-btn">Import Data</button><button id="export-data-btn">Export Data</button></div>
+                </div>
+            </div>
+            <input type="file" id="file-loader" accept=".json" style="display: none;">
+        </nav>
+
+        <!-- Page 1: Daily Workout -->
+        <div id="workout-page" class="page active">
+             <main>
+                <div id="routine-selection-area" class="card"><select id="daily-routine-select"><option value="" disabled selected>Select a routine to begin...</option></select><button id="start-routine-btn" class="btn-primary" disabled>Start Routine</button></div>
+                <div id="active-routine-info" class="card hidden"><div class="section-header"><h2 id="active-routine-name"></h2><div class="header-actions"><button id="reset-workout-btn" class="text-btn">Reset</button><button id="finish-workout-btn" class="btn-danger">Finish Workout</button></div></div></div>
+                <div id="active-routine-display" class="scrollable-content"><div class="placeholder-card">Select a routine and click "Start" to see your exercises.</div></div>
+            </main>
+            <div id="tracker-footer"><div id="date-nav"><button id="prev-day-btn" aria-label="Previous Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg></button><button id="date-display-btn" class="date-display">Today</button><button id="next-day-btn" aria-label="Next Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg></button></div></div>
+        </div>
+
+        <!-- Page 2: Routines -->
+        <div id="routines-page" class="page">
+             <main>
+                <div class="card">
+                    <h3>Create/Edit Routine</h3>
+                    <form id="create-routine-form">
+                        <input type="hidden" id="routine-editing-id">
+                        <input type="text" id="routine-name-input" placeholder="Routine Name (e.g., Push Day A)" required>
+                        <div id="add-exercise-to-routine-controls">
+                            <p class="form-section-label">Add Exercises</p>
+                            <select id="routine-exercise-select"><option value="" disabled selected>Choose an exercise...</option></select>
+                            <div id="routine-track-type-toggle">
+                                <div id="reps-based-inputs">
+                                    <div class="inputs-grid">
+                                        <input type="number" id="routine-sets-input" placeholder="Sets" value="3">
+                                        <input type="text" id="routine-reps-input" placeholder="Reps (e.g., 8-12)">
+                                    </div>
+                                </div>
+                                <div id="time-based-inputs" class="hidden">
+                                     <div class="inputs-grid">
+                                        <input type="number" id="routine-time-sets-input" placeholder="Sets" value="3">
+                                        <input type="number" id="routine-duration-input" placeholder="Duration (sec)">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" id="add-exercise-to-builder-btn" class="btn-secondary" aria-label="Add Exercise to Routine">Add Exercise</button>
+                        </div>
+                        <div id="routine-builder-list"></div>
+                        <div class="form-actions"><button type="submit" id="save-routine-btn" class="btn-primary" disabled>Save Routine</button></div>
+                    </form>
+                </div>
+                <div id="saved-routines-container"><div class="section-header"><h2>My Routines</h2></div><div id="saved-routines-list"></div></div>
+            </main>
+        </div>
+
+        <!-- Page 3: Exercise List -->
+        <div id="exercises-page" class="page">
+             <main>
+                <div class="card">
+                    <h3>Add/Edit Exercise</h3>
+                    <form id="add-exercise-db-form">
+                        <input type="hidden" id="db-editing-id">
+                        <input type="text" id="db-exercise-name" placeholder="Exercise Name" required>
+                        <div class="inputs-grid">
+                            <select id="db-exercise-type" required><option value="" disabled selected>Choose body part...</option><option value="Upper Body">Upper Body</option><option value="Lower Body">Lower Body</option><option value="Core">Core</option><option value="Full Body">Full Body</option></select>
+                            <select id="db-exercise-track-type" required><option value="reps" selected>Track by Reps</option><option value="time">Track by Time</option></select>
+                        </div>
+                        <div class="file-input-container">
+                            <label for="db-exercise-image-input" class="btn-secondary">Choose Image</label>
+                            <input type="file" id="db-exercise-image-input" accept="image/*,image/gif">
+                            <img id="db-exercise-thumbnail" class="hidden" alt="Exercise thumbnail preview">
+                            <button type="button" id="remove-db-image-btn" class="btn-danger hidden">Remove</button>
+                        </div>
+                        <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button>
+                    </form>
+                </div>
+                <div id="db-list-container">
+                    <div class="section-header"><h2 id="db-list-header">My Exercises</h2></div>
+                    <div id="db-exercise-list"></div>
+                </div>
+             </main>
+        </div>
     </div>
 
-    <!-- Hidden file input for selecting sounds -->
-    <input type="file" id="sound-file-input" accept="audio/*" style="display: none;">
+    <!-- Modals -->
+    <div id="image-viewer-modal" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content image-modal"><img id="full-size-image" alt="Full size exercise image"></div></div>
+    
+    <div id="countdown-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content countdown-content">
+            <div class="countdown-timer-wrapper">
+                <svg class="countdown-svg" width="200" height="200" viewBox="0 0 120 120">
+                    <circle class="timer-bg" cx="60" cy="60" r="54" stroke-width="12" />
+                    <circle class="timer-progress" cx="60" cy="60" r="54" stroke-width="12" transform="rotate(-90 60 60)" />
+                </svg>
+                <div class="countdown-timer-text">
+                    <span id="countdown-timer-display">30</span>
+                    <small id="countdown-label">Break Time</small>
+                </div>
+            </div>
+            <div id="countdown-next-exercise-info" class="hidden">
+                <small>Up Next</small>
+                <span id="countdown-next-exercise-name"></span>
+                <span id="countdown-next-exercise-details"></span>
+            </div>
+        </div>
+    </div>
 
-    <script src="app.js"></script>
+    <div id="stopwatch-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content stopwatch-content">
+            <div class="stopwatch-header">
+                <h3 id="stopwatch-exercise-name">Exercise Name</h3>
+                <small>Set in Progress</small>
+            </div>
+            <div id="stopwatch-timer-display">00:00.00</div>
+            <div class="stopwatch-modal-controls">
+                <button id="stopwatch-action-btn" class="btn-danger">Stop</button>
+                <button id="stopwatch-cancel-btn" class="text-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="workout-complete-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content workout-complete-content">
+            <h2 class="workout-complete-title">Workout Complete!</h2>
+            <div class="workout-complete-time-info">
+                <small>Total Time</small>
+                <span id="workout-total-time"></span>
+            </div>
+            <button id="close-complete-modal-btn" class="btn-primary">View Summary</button>
+        </div>
+    </div>
+
+    <div id="swap-exercise-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3>Swap Exercise</h3>
+            <form id="swap-exercise-form">
+                <p style="margin-bottom: 12px; color: var(--color-text-secondary); font-size: 14px;">Choose a new exercise to replace the current one. The sets and reps/duration will be preserved.</p>
+                <select id="swap-exercise-select" required><option value="" disabled selected>Choose replacement...</option></select>
+                <div class="form-actions" style="display: flex; gap: 12px; margin-top: 16px;">
+                    <button type="button" id="cancel-swap-btn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Confirm Swap</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-workout-exercise-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3 id="edit-modal-title">Edit Exercise</h3>
+            <form id="edit-workout-exercise-form">
+                 <div id="edit-reps-based-inputs">
+                    <div class="inputs-grid">
+                        <input type="number" id="edit-sets-input" placeholder="Sets">
+                        <input type="text" id="edit-reps-input" placeholder="Reps (e.g., 8-12)">
+                    </div>
+                </div>
+                <div id="edit-time-based-inputs" class="hidden">
+                     <div class="inputs-grid">
+                        <input type="number" id="edit-time-sets-input" placeholder="Sets">
+                        <input type="number" id="edit-duration-input" placeholder="Duration (sec)">
+                    </div>
+                </div>
+                <div class="form-actions" style="display: flex; gap: 12px; margin-top: 16px;">
+                    <button type="button" id="cancel-edit-btn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
