@@ -11,8 +11,6 @@ const WorkoutPage = (function() {
     const dateDisplayBtn = document.getElementById('date-display-btn');
     const prevDayBtn = document.getElementById('prev-day-btn');
     const nextDayBtn = document.getElementById('next-day-btn');
-    const imageViewerModal = document.getElementById('image-viewer-modal');
-    const fullSizeImage = document.getElementById('full-size-image');
 
     // --- State ---
     let state = {
@@ -67,9 +65,12 @@ const WorkoutPage = (function() {
                     </div>`;
                 });
             }
+            
+            const firstImage = exercise.images && exercise.images.length > 0 ? exercise.images[0] : null;
 
             summaryHTML += `<div class="summary-exercise-card">
                 <div class="summary-exercise-header">
+                    ${firstImage ? `<img src="${firstImage}" alt="${exercise.name}" class="db-item-thumbnail" data-id="${exercise.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
                     <div class="exercise-item-main" style="text-align:center;">
                         <span class="exercise-item-name">${exercise.name}</span>
                         <small class="exercise-item-stats">${stats}</small>
@@ -115,10 +116,12 @@ const WorkoutPage = (function() {
             const intervals = [15, 30, 45, 60, 90, 120];
             const intervalButtonsHTML = intervals.map(time => `<button class="timer-interval-btn ${progress.timer.duration === time ? 'selected' : ''}" data-time="${time}" ${!progress.timer.enabled ? 'disabled' : ''}>${time}s</button>`).join('');
             
+            const firstImage = exercise.images && exercise.images.length > 0 ? exercise.images[0] : null;
+
             itemDiv.innerHTML = `
                 <div class="swipe-item-container">
                     <div class="swipe-content">
-                        ${exercise.image ? `<img src="${exercise.image}" alt="${exercise.name}" class="db-item-thumbnail" data-id="${exercise.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
+                        ${firstImage ? `<img src="${firstImage}" alt="${exercise.name}" class="db-item-thumbnail" data-id="${exercise.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
                         <div class="exercise-content">
                             <div class="exercise-header">
                                 <div class="exercise-item-main">
@@ -258,11 +261,23 @@ const WorkoutPage = (function() {
     
     function handleDisplayClick(e) {
         const t = e.target;
-        const card = t.closest('.active-routine-exercise');
-        const instanceId = card ? parseFloat(card.dataset.instanceId) : null;
         const dateKey = DB.getFormattedDate(state.currentDate);
         const workoutData = DB.getHistory()[dateKey];
+
+        // Thumbnail click for image viewer (works in both active and summary views)
+        if (t.classList.contains('db-item-thumbnail')) {
+            const id = parseInt(t.dataset.id);
+            const ex = DB.getExercises().find(e => e.id === id);
+            if (ex && ex.images && ex.images.length > 0) {
+                Modals.openImageViewer(ex.images);
+            }
+            return; // Prevent other actions
+        }
+
         if(!workoutData && !t.id === 'start-new-workout-btn') return;
+
+        const card = t.closest('.active-routine-exercise');
+        const instanceId = card ? parseFloat(card.dataset.instanceId) : null;
 
         // Active workout actions
         if (card) {
@@ -277,9 +292,10 @@ const WorkoutPage = (function() {
             } else if (t.matches('.start-stopwatch-modal-btn')) {
                 const exerciseData = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId);
                 Modals.openStopwatch(instanceId, exerciseData.name, (id, elapsedTime) => {
-                    if (!progress.loggedData) progress.loggedData = [];
-                    progress.loggedData.push(elapsedTime);
-                    progress.setsCompleted++;
+                    const currentProgress = workoutData.progress.find(p => p.instanceId === id);
+                    if (!currentProgress.loggedData) currentProgress.loggedData = [];
+                    currentProgress.loggedData.push(elapsedTime);
+                    currentProgress.setsCompleted++;
                     handleSetCompletion(id);
                 });
             } else if (t.matches('.timer-toggle')) {
@@ -290,10 +306,6 @@ const WorkoutPage = (function() {
                 progress.timer.duration = parseInt(t.dataset.time);
                 DB.save();
                 render();
-            } else if (t.classList.contains('db-item-thumbnail')) {
-                const id = parseInt(t.dataset.id);
-                const ex = DB.getExercises().find(e => e.id === id);
-                if (ex && ex.image) { fullSizeImage.src = ex.image; UI.openModal(imageViewerModal); }
             }
         }
         
@@ -329,12 +341,13 @@ const WorkoutPage = (function() {
             const id = parseFloat(editBtn.dataset.instanceId);
             const exercise = workoutData.routine.exercises.find(ex => ex.instanceId === id);
             Modals.openEdit(id, exercise, (instanceId, newValues) => {
-                if (exercise.trackType === 'time') {
-                    if (newValues.sets > 0) exercise.sets = newValues.sets;
-                    if (newValues.duration > 0) exercise.duration = newValues.duration;
+                const targetExercise = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId);
+                if (targetExercise.trackType === 'time') {
+                    if (newValues.sets > 0) targetExercise.sets = newValues.sets;
+                    if (newValues.duration > 0) targetExercise.duration = newValues.duration;
                 } else {
-                    if (newValues.sets > 0) exercise.sets = newValues.sets;
-                    if (newValues.reps) exercise.reps = newValues.reps;
+                    if (newValues.sets > 0) targetExercise.sets = newValues.sets;
+                    if (newValues.reps) targetExercise.reps = newValues.reps;
                 }
                 DB.save();
                 render();

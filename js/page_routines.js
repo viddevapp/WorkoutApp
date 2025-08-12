@@ -54,13 +54,15 @@ const RoutinesPage = (function() {
         state.builderExercises.forEach(exRef => {
             const ex = DB.getExercises().find(dbEx => dbEx.id === exRef.exerciseId);
             if (ex) {
+                const firstImage = ex.images && ex.images.length > 0 ? ex.images[0] : null;
                 const i = document.createElement('div');
                 i.className = 'routine-builder-item sortable-item';
                 i.dataset.instanceId = exRef.instanceId;
+                i.dataset.exerciseId = ex.id; // Store exerciseId for image lookup
                 const details = exRef.trackType === 'time' ? `${exRef.sets} sets × ${exRef.duration} sec` : `${exRef.sets} sets × ${exRef.reps} reps`;
                 i.innerHTML = `
                     <div class="routine-builder-item-main">
-                        <img src="${ex.image || ''}" class="db-item-thumbnail" style="${!ex.image ? 'background-color: var(--color-background);' : ''}">
+                        ${firstImage ? `<img src="${firstImage}" alt="${ex.name}" class="db-item-thumbnail">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
                         <div>
                             <span class="exercise-item-name">${ex.name}</span>
                             <small class="exercise-item-stats">${details}</small>
@@ -223,11 +225,19 @@ const RoutinesPage = (function() {
         addExerciseBtn.addEventListener('click', handleAddExercise);
         createForm.addEventListener('submit', handleSaveRoutine);
         nameInput.addEventListener('input', validateForm);
+        
         builderList.addEventListener('click', e => {
             if (e.target.matches('.delete-btn')) {
                 const instanceId = parseFloat(e.target.dataset.instanceId);
                 state.builderExercises = state.builderExercises.filter(ex => ex.instanceId !== instanceId);
                 renderBuilderList();
+            } else if (e.target.matches('.db-item-thumbnail')) {
+                const item = e.target.closest('.routine-builder-item');
+                const exerciseId = parseInt(item.dataset.exerciseId);
+                const ex = DB.getExercises().find(dbEx => dbEx.id === exerciseId);
+                if (ex && ex.images && ex.images.length > 0) {
+                    Modals.openImageViewer(ex.images);
+                }
             }
         });
         savedList.addEventListener('click', handleListClick);
