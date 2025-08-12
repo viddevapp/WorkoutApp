@@ -86,11 +86,12 @@
                             <select id="db-exercise-type" required><option value="" disabled selected>Choose body part...</option><option value="Upper Body">Upper Body</option><option value="Lower Body">Lower Body</option><option value="Core">Core</option><option value="Full Body">Full Body</option></select>
                             <select id="db-exercise-track-type" required><option value="reps" selected>Track by Reps</option><option value="time">Track by Time</option></select>
                         </div>
-                        <textarea id="db-exercise-instructions" placeholder="Enter detailed exercise instructions..."></textarea>
-                        <div class="form-section-label">Images</div>
-                        <div id="db-image-preview-container"></div>
-                        <label for="db-exercise-image-input" class="btn-secondary">Choose Image(s)</label>
-                        <input type="file" id="db-exercise-image-input" accept="image/*" multiple>
+                        <div class="file-input-container">
+                            <label for="db-exercise-image-input" class="btn-secondary">Choose Image</label>
+                            <input type="file" id="db-exercise-image-input" accept="image/*,image/gif">
+                            <img id="db-exercise-thumbnail" class="hidden" alt="Exercise thumbnail preview">
+                            <button type="button" id="remove-db-image-btn" class="btn-danger hidden">Remove</button>
+                        </div>
                         <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button>
                     </form>
                 </div>
@@ -105,17 +106,6 @@
     <!-- Modals -->
     <div id="image-viewer-modal" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content image-modal"><img id="full-size-image" alt="Full size exercise image"></div></div>
     
-    <div id="instructions-modal" class="modal hidden">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <h3 id="instructions-modal-title"></h3>
-            <p id="instructions-modal-content" style="white-space: pre-wrap; color: var(--color-text-secondary);"></p>
-            <div class="form-actions">
-                <button id="close-instructions-modal-btn" class="btn-primary">Close</button>
-            </div>
-        </div>
-    </div>
-
     <div id="countdown-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content countdown-content">
