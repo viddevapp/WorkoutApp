@@ -16,14 +16,14 @@
         <!-- Main Navigation -->
         <nav>
             <div class="nav-tabs">
-                <button id="nav-workout" class="nav-btn active">Daily Workout</button>
-                <button id="nav-routines" class="nav-btn">Routines</button>
-                <button id="nav-exercises" class="nav-btn">Exercise List</button>
+                <button id="nav-workout" data-action="show-page" data-page="workout-page" class="nav-btn active">Daily Workout</button>
+                <button id="nav-routines" data-action="show-page" data-page="routines-page" class="nav-btn">Routines</button>
+                <button id="nav-exercises" data-action="show-page" data-page="exercises-page" class="nav-btn">Exercise List</button>
             </div>
             <div class="nav-actions">
                 <div id="actions-menu-container">
-                    <button id="actions-menu-btn" aria-label="Actions Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button>
-                    <div id="actions-dropdown" class="hidden"><button id="import-data-btn">Import Data</button><button id="export-data-btn">Export Data</button></div>
+                    <button id="actions-menu-btn" data-action="toggle-actions-menu" aria-label="Actions Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button>
+                    <div id="actions-dropdown" class="hidden"><button data-action="open-import-dialog">Import Data</button><button data-action="export-data">Export Data</button></div>
                 </div>
             </div>
             <input type="file" id="file-loader" accept=".json" style="display: none;">
@@ -32,11 +32,11 @@
         <!-- Page 1: Daily Workout -->
         <div id="workout-page" class="page active">
              <main>
-                <div id="routine-selection-area" class="card"><select id="daily-routine-select"><option value="" disabled selected>Select a routine to begin...</option></select><button id="start-routine-btn" class="btn-primary" disabled>Start Routine</button></div>
-                <div id="active-routine-info" class="card hidden"><div class="section-header"><h2 id="active-routine-name"></h2><div class="header-actions"><button id="reset-workout-btn" class="text-btn">Reset</button><button id="finish-workout-btn" class="btn-danger">Finish Workout</button></div></div></div>
+                <div id="routine-selection-area" class="card"><select id="daily-routine-select"><option value="" disabled selected>Select a routine to begin...</option></select><button id="start-routine-btn" data-action="start-routine" class="btn-primary" disabled>Start Routine</button></div>
+                <div id="active-routine-info" class="card hidden"><div class="section-header"><h2 id="active-routine-name"></h2><div class="header-actions"><button data-action="reset-workout" class="text-btn">Reset</button><button data-action="finish-workout" class="btn-danger">Finish Workout</button></div></div></div>
                 <div id="active-routine-display" class="scrollable-content"><div class="placeholder-card">Select a routine and click "Start" to see your exercises.</div></div>
             </main>
-            <div id="tracker-footer"><div id="date-nav"><button id="prev-day-btn" aria-label="Previous Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg></button><button id="date-display-btn" class="date-display">Today</button><button id="next-day-btn" aria-label="Next Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg></button></div></div>
+            <div id="tracker-footer"><div id="date-nav"><button id="prev-day-btn" data-action="change-date" data-days="-1" aria-label="Previous Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg></button><button id="date-display-btn" data-action="go-to-today" class="date-display">Today</button><button id="next-day-btn" data-action="change-date" data-days="1" aria-label="Next Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg></button></div></div>
         </div>
 
         <!-- Page 2: Routines -->
@@ -64,7 +64,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <button type="button" id="add-exercise-to-builder-btn" class="btn-secondary" aria-label="Add Exercise to Routine">Add Exercise</button>
+                            <button type="button" data-action="add-exercise-to-builder" class="btn-secondary" aria-label="Add Exercise to Routine">Add Exercise</button>
                         </div>
                         <div id="routine-builder-list"></div>
                         <div class="form-actions"><button type="submit" id="save-routine-btn" class="btn-primary" disabled>Save Routine</button></div>
@@ -90,7 +90,7 @@
                             <label for="db-exercise-image-input" class="btn-secondary">Choose Image</label>
                             <input type="file" id="db-exercise-image-input" accept="image/*,image/gif">
                             <img id="db-exercise-thumbnail" class="hidden" alt="Exercise thumbnail preview">
-                            <button type="button" id="remove-db-image-btn" class="btn-danger hidden">Remove</button>
+                            <button type="button" id="remove-db-image-btn" data-action="remove-db-image" class="btn-danger hidden">Remove</button>
                         </div>
                         <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button>
                     </form>
@@ -104,9 +104,9 @@
     </div>
 
     <!-- Modals -->
-    <div id="image-viewer-modal" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content image-modal"><img id="full-size-image" alt="Full size exercise image"></div></div>
+    <div id="image-viewer-modal" class="modal hidden" data-action="close-modal"><div class="modal-overlay"></div><div class="modal-content image-modal"><img id="full-size-image" alt="Full size exercise image"></div></div>
     
-    <div id="countdown-modal" class="modal hidden">
+    <div id="countdown-modal" class="modal hidden" data-action="close-countdown-modal">
         <div class="modal-overlay"></div>
         <div class="modal-content countdown-content">
             <div class="countdown-timer-wrapper">
@@ -136,8 +136,8 @@
             </div>
             <div id="stopwatch-timer-display">00:00.00</div>
             <div class="stopwatch-modal-controls">
-                <button id="stopwatch-action-btn" class="btn-danger">Stop</button>
-                <button id="stopwatch-cancel-btn" class="text-btn">Cancel</button>
+                <button id="stopwatch-action-btn" data-action="stopwatch-action" class="btn-danger">Stop</button>
+                <button data-action="cancel-stopwatch" class="text-btn">Cancel</button>
             </div>
         </div>
     </div>
@@ -150,7 +150,7 @@
                 <small>Total Time</small>
                 <span id="workout-total-time"></span>
             </div>
-            <button id="close-complete-modal-btn" class="btn-primary">View Summary</button>
+            <button data-action="close-complete-modal" class="btn-primary">View Summary</button>
         </div>
     </div>
 
@@ -162,7 +162,7 @@
                 <p style="margin-bottom: 12px; color: var(--color-text-secondary); font-size: 14px;">Choose a new exercise to replace the current one. The sets and reps/duration will be preserved.</p>
                 <select id="swap-exercise-select" required><option value="" disabled selected>Choose replacement...</option></select>
                 <div class="form-actions" style="display: flex; gap: 12px; margin-top: 16px;">
-                    <button type="button" id="cancel-swap-btn" class="btn-secondary">Cancel</button>
+                    <button type="button" data-action="close-modal" class="btn-secondary">Cancel</button>
                     <button type="submit" class="btn-primary">Confirm Swap</button>
                 </div>
             </form>
@@ -187,7 +187,7 @@
                     </div>
                 </div>
                 <div class="form-actions" style="display: flex; gap: 12px; margin-top: 16px;">
-                    <button type="button" id="cancel-edit-btn" class="btn-secondary">Cancel</button>
+                    <button type="button" data-action="close-modal" class="btn-secondary">Cancel</button>
                     <button type="submit" class="btn-primary">Save Changes</button>
                 </div>
             </form>
