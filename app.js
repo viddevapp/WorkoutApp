@@ -1,40 +1,46 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const drumMachine = document.querySelector('.drum-machine');
     const pads = document.querySelectorAll('.pad');
     const fileInput = document.getElementById('sound-file-input');
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const padSounds = new Map(); // Stores the audio buffer for each pad
+    const padSounds = new Map();
+
+    // --- NEW: The Fix for Browser UI ---
+    const setAppHeight = () => {
+        // Measure the actual inner height of the window (excluding browser UI)
+        // and set it as the height of our drum machine container.
+        drumMachine.style.height = `${window.innerHeight}px`;
+    };
+
+    // Set the height initially on load
+    setAppHeight();
+
+    // Reset the height whenever the window is resized (e.g., orientation change, address bar appears/hides)
+    window.addEventListener('resize', setAppHeight);
+    // --- End of New Code ---
 
     pads.forEach(pad => {
-        // Each pad gets its own timer variable. This is the key to the fix.
         let pressTimer = null;
 
         const handlePressStart = (event) => {
-            // Prevent default actions, especially on touch screens (like scrolling)
             event.preventDefault();
-            
-            // Start a timer for this specific pad
             pressTimer = setTimeout(() => {
-                // If timer completes, it's a long press.
-                // Open the file chooser for this pad.
                 fileInput.onchange = (e) => handleFileSelection(e, pad);
                 fileInput.click();
-                pressTimer = null; // Clear timer after firing
-            }, 500); // 500ms threshold for a long press
+                pressTimer = null;
+            }, 500);
         };
 
         const handlePressEnd = () => {
-            // If the timer is still active when the user releases, it's a tap.
             if (pressTimer) {
                 clearTimeout(pressTimer);
                 playSound(pad);
             }
         };
 
-        // Assign events for both mouse and touch input
         pad.addEventListener('mousedown', handlePressStart);
         pad.addEventListener('mouseup', handlePressEnd);
-        pad.addEventListener('mouseleave', () => clearTimeout(pressTimer)); // Cancel if mouse leaves pad
-
+        pad.addEventListener('mouseleave', () => clearTimeout(pressTimer));
         pad.addEventListener('touchstart', handlePressStart);
         pad.addEventListener('touchend', handlePressEnd);
     });
@@ -48,20 +54,17 @@ document.addEventListener('DOMContentLoaded', () => {
             audioContext.decodeAudioData(e.target.result)
                 .then(buffer => {
                     padSounds.set(selectedPad, buffer);
-                    selectedPad.textContent = '●'; // Indicate a sound is loaded
+                    selectedPad.textContent = '●';
                 })
                 .catch(err => console.error("Error decoding audio file", err));
         };
         reader.readAsArrayBuffer(file);
-        
-        // Reset the input to allow selecting the same file again
         event.target.value = null;
     };
 
     function playSound(pad) {
         const soundBuffer = padSounds.get(pad);
         if (soundBuffer) {
-            // Ensure audio context is running (required by modern browsers)
             if (audioContext.state === 'suspended') {
                 audioContext.resume();
             }
@@ -71,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
             source.connect(audioContext.destination);
             source.start(0);
 
-            // Add a visual effect for feedback
             pad.classList.add('active');
             source.onended = () => {
                 pad.classList.remove('active');
