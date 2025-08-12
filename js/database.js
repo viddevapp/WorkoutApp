@@ -17,13 +17,54 @@ const DB = (function() {
         }
     }
 
+    // --- DATA MIGRATION ---
+    function migrateData(data) {
+        // Migration from single 'image' string to 'images' array
+        if (data.exerciseDatabase && data.exerciseDatabase.length > 0) {
+            let migrationNeeded = false;
+            data.exerciseDatabase.forEach(ex => {
+                if (typeof ex.image !== 'undefined' && ex.image !== null) {
+                    if (!ex.images) {
+                        ex.images = [];
+                    }
+                    if (ex.image) {
+                        ex.images.push(ex.image);
+                    }
+                    delete ex.image;
+                    migrationNeeded = true;
+                } else if (!ex.images) {
+                    ex.images = [];
+                }
+            });
+            if (migrationNeeded) console.log("Data migration performed: 'image' property converted to 'images' array.");
+        }
+        
+        // Hydrate old workout history with images array if missing
+        if (data.history) {
+             Object.values(data.history).forEach(day => {
+                if(day.routine && day.routine.exercises) {
+                    day.routine.exercises.forEach(ex => {
+                        if (typeof ex.image !== 'undefined' && ex.image !== null) {
+                            if (!ex.images) ex.images = [ex.image];
+                            delete ex.image;
+                        } else if (!ex.images) {
+                            const dbEx = data.exerciseDatabase.find(db => db.id === ex.id);
+                            ex.images = dbEx ? dbEx.images : [];
+                        }
+                    });
+                }
+            });
+        }
+        return data;
+    }
+
     function loadDataFromLocalStorage() {
         const d = localStorage.getItem('workoutTrackerData');
         if (d) {
             try {
-                const p = JSON.parse(d);
+                let p = JSON.parse(d);
                 if (p.exerciseDatabase && p.history && p.userGoals) {
-                    allData = p;
+                    allData = migrateData(p); // Apply migration
                     if (!allData.routines) allData.routines = [];
                 }
             } catch (e) {

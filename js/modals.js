@@ -1,5 +1,5 @@
 const Modals = (function() {
-    // --- DOM Elements ---
+    // --- DOM Elements for All Modals ---
     const stopwatchModal = document.getElementById('stopwatch-modal');
     const stopwatchExerciseName = document.getElementById('stopwatch-exercise-name');
     const stopwatchTimerDisplay = document.getElementById('stopwatch-timer-display');
@@ -35,11 +35,23 @@ const Modals = (function() {
     const editDurationInput = document.getElementById('edit-duration-input');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     
-    // --- State ---
+    const imageViewerModal = document.getElementById('image-viewer-modal');
+    const imageViewerContent = document.getElementById('image-viewer-content');
+    const imageViewerDots = document.getElementById('image-viewer-dots');
+    const prevBtn = document.getElementById('image-viewer-prev');
+    const nextBtn = document.getElementById('image-viewer-next');
+    
+    // --- State Management ---
     let countdownState = { intervalId: null, initialDuration: 0 };
     let stopwatchState = { animationFrameId: null, startTime: 0, isRunning: false, isStopped: false, elapsedTime: 0, instanceId: null };
     let editState = { instanceId: null };
     let swapState = { instanceId: null };
+    let imageViewerState = {
+        images: [],
+        currentIndex: 0,
+        touchStartX: 0,
+        touchEndX: 0
+    };
 
     // --- Countdown Timer ---
     function startCountdown(duration, nextExercise = null) {
@@ -124,6 +136,62 @@ const Modals = (function() {
         UI.closeModal(stopwatchModal);
     }
 
+    // --- Image Viewer Logic ---
+    function goToSlide(index) {
+        if (index < 0 || index >= imageViewerState.images.length) return;
+
+        imageViewerState.currentIndex = index;
+        const offset = -index * 100;
+        imageViewerContent.style.transform = `translateX(${offset}%)`;
+
+        document.querySelectorAll('.viewer-dot').forEach((dot, i) => {
+            dot.classList.toggle('active', i === index);
+        });
+
+        prevBtn.classList.toggle('hidden', index === 0);
+        nextBtn.classList.toggle('hidden', index === imageViewerState.images.length - 1);
+    }
+
+    function renderImageViewer() {
+        imageViewerContent.innerHTML = '';
+        imageViewerDots.innerHTML = '';
+        imageViewerState.images.forEach((src, index) => {
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = `Exercise image ${index + 1}`;
+            imageViewerContent.appendChild(img);
+
+            const dot = document.createElement('span');
+            dot.className = 'viewer-dot';
+            dot.addEventListener('click', () => goToSlide(index));
+            imageViewerDots.appendChild(dot);
+        });
+        goToSlide(imageViewerState.currentIndex);
+    }
+
+    function openImageViewer(images, startIndex = 0) {
+        if (!images || images.length === 0) return;
+        imageViewerState.images = images;
+        imageViewerState.currentIndex = startIndex;
+        renderImageViewer();
+        UI.openModal(imageViewerModal);
+    }
+
+    function handleViewerSwipe() {
+        const threshold = 50; // Min swipe distance
+        const diff = imageViewerState.touchStartX - imageViewerState.touchEndX;
+        if (Math.abs(diff) > threshold) {
+            if (diff > 0) { // Swiped left
+                goToSlide(imageViewerState.currentIndex + 1);
+            } else { // Swiped right
+                goToSlide(imageViewerState.currentIndex - 1);
+            }
+        } else {
+            // If not a real swipe, snap back to the current slide
+            goToSlide(imageViewerState.currentIndex);
+        }
+    }
+
     // --- Other Modals ---
     function openWorkoutComplete(totalTime, onDoneCallback) {
         workoutTotalTimeDisplay.textContent = UI.formatTotalTime(totalTime);
@@ -172,7 +240,34 @@ const Modals = (function() {
         };
     }
 
+    // --- Initialization of Event Listeners ---
+    function initImageViewerListeners() {
+        prevBtn.addEventListener('click', () => goToSlide(imageViewerState.currentIndex - 1));
+        nextBtn.addEventListener('click', () => goToSlide(imageViewerState.currentIndex + 1));
+        
+        imageViewerContent.addEventListener('touchstart', e => {
+            imageViewerState.touchStartX = e.touches[0].clientX;
+            imageViewerContent.style.transition = 'none'; // Disable transition for instant feedback
+        }, { passive: true });
+
+        imageViewerContent.addEventListener('touchmove', e => {
+            if (imageViewerState.touchStartX === 0) return;
+            const currentX = e.touches[0].clientX;
+            const diff = currentX - imageViewerState.touchStartX;
+            const offset = -imageViewerState.currentIndex * imageViewerContent.offsetWidth + diff;
+            imageViewerContent.style.transform = `translateX(${offset}px)`;
+        }, { passive: true });
+        
+        imageViewerContent.addEventListener('touchend', e => {
+            imageViewerState.touchEndX = e.changedTouches[0].clientX;
+            imageViewerContent.style.transition = 'transform 0.3s ease-in-out'; // Re-enable for snap animation
+            handleViewerSwipe();
+            imageViewerState.touchStartX = 0; // Reset start position
+        }, { passive: true });
+    }
+
     function init() {
+        initImageViewerListeners();
         countdownModal.addEventListener('click', e => {
             if (e.target.classList.contains('modal-content') || e.target.classList.contains('countdown-timer-wrapper')) closeCountdownModal();
         });
@@ -181,7 +276,7 @@ const Modals = (function() {
         cancelEditBtn.addEventListener('click', () => UI.closeModal(editWorkoutExerciseModal));
     }
     
-    // Public API
+    // --- Public API ---
     return {
         init,
         startCountdown,
@@ -191,5 +286,6 @@ const Modals = (function() {
         openWorkoutComplete,
         openSwap,
         openEdit,
+        openImageViewer
     };
 })();

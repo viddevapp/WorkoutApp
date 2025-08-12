@@ -85,12 +85,14 @@
                             <select id="db-exercise-track-type" required><option value="reps" selected>Track by Reps</option><option value="time">Track by Time</option></select>
                         </div>
                         <div class="file-input-container">
-                            <label for="db-exercise-image-input" class="btn-secondary">Choose Image</label>
-                            <input type="file" id="db-exercise-image-input" accept="image/*,image/gif">
-                            <img id="db-exercise-thumbnail" class="hidden" alt="Exercise thumbnail preview">
-                            <button type="button" id="remove-db-image-btn" class="btn-danger hidden">Remove</button>
+                            <label for="db-exercise-image-input" class="btn-secondary">Choose Images</label>
+                            <input type="file" id="db-exercise-image-input" accept="image/*,image/gif" multiple>
                         </div>
-                        <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button>
+                        <div id="db-exercise-thumbnail-container"></div>
+                        <div class="form-actions-split">
+                            <button type="button" id="db-cancel-edit-btn" class="btn-secondary hidden">Cancel</button>
+                            <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button>
+                        </div>
                     </form>
                 </div>
                 <div id="db-list-container">
@@ -102,7 +104,17 @@
     </div>
 
     <!-- Modals -->
-    <div id="image-viewer-modal" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content image-modal"><img id="full-size-image" alt="Full size exercise image"></div></div>
+    <div id="image-viewer-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content image-modal">
+            <div id="image-viewer-content-wrapper">
+                <div id="image-viewer-content"></div>
+            </div>
+            <button id="image-viewer-prev" class="image-viewer-nav-btn">&lt;</button>
+            <button id="image-viewer-next" class="image-viewer-nav-btn">&gt;</button>
+            <div id="image-viewer-dots"></div>
+        </div>
+    </div>
     
     <div id="countdown-modal" class="modal hidden">
         <div class="modal-overlay"></div>

@@ -1,24 +1,23 @@
 const ExercisesPage = (function() {
     // --- DOM Elements ---
     const page = document.getElementById('exercises-page');
+    const mainScroll = page.querySelector('main');
     const form = document.getElementById('add-exercise-db-form');
     const editingIdInput = document.getElementById('db-editing-id');
     const nameInput = document.getElementById('db-exercise-name');
     const typeSelect = document.getElementById('db-exercise-type');
     const trackTypeSelect = document.getElementById('db-exercise-track-type');
     const imageInput = document.getElementById('db-exercise-image-input');
-    const thumbnail = document.getElementById('db-exercise-thumbnail');
-    const removeImageBtn = document.getElementById('remove-db-image-btn');
+    const thumbnailContainer = document.getElementById('db-exercise-thumbnail-container');
     const submitBtn = document.getElementById('db-submit-btn');
+    const cancelBtn = document.getElementById('db-cancel-edit-btn');
     const exerciseListDiv = document.getElementById('db-exercise-list');
-    const imageViewerModal = document.getElementById('image-viewer-modal');
-    const fullSizeImage = document.getElementById('full-size-image');
 
     // --- State ---
     let state = {
         isEditing: false,
         id: null,
-        currentImage: null
+        currentImages: []
     };
 
     function validateForm() {
@@ -28,14 +27,26 @@ const ExercisesPage = (function() {
         submitBtn.disabled = !(name && type && trackType);
     }
 
+    function renderThumbnails() {
+        thumbnailContainer.innerHTML = '';
+        state.currentImages.forEach((imgData, index) => {
+            const item = document.createElement('div');
+            item.className = 'thumbnail-item';
+            item.innerHTML = `
+                <img src="${imgData}" alt="Exercise thumbnail preview ${index + 1}">
+                <button type="button" class="thumbnail-remove-btn" data-index="${index}">&times;</button>
+            `;
+            thumbnailContainer.appendChild(item);
+        });
+    }
+
     function resetForm() {
         form.reset();
-        state = { isEditing: false, id: null, currentImage: null };
+        state = { isEditing: false, id: null, currentImages: [] };
         editingIdInput.value = '';
-        thumbnail.classList.add('hidden');
-        removeImageBtn.classList.add('hidden');
-        thumbnail.src = '';
+        renderThumbnails();
         submitBtn.textContent = 'Save to Exercise List';
+        cancelBtn.classList.add('hidden');
         validateForm();
     }
     
@@ -68,11 +79,12 @@ const ExercisesPage = (function() {
             const sortedDb = exercisesByType[type].sort((a, b) => a.name.localeCompare(b.name));
 
             sortedDb.forEach(ex => {
+                const firstImage = ex.images && ex.images.length > 0 ? ex.images[0] : null;
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'swipe-item-container';
                 itemDiv.innerHTML = `
                     <div class="swipe-content">
-                        ${ex.image ? `<img src="${ex.image}" alt="${ex.name}" class="db-item-thumbnail" data-id="${ex.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
+                        ${firstImage ? `<img src="${firstImage}" alt="${ex.name}" class="db-item-thumbnail" data-id="${ex.id}">` : '<div class="db-item-thumbnail" style="background-color: var(--color-background);"></div>'}
                         <div class="exercise-item-main">
                             <span class="exercise-item-name">${ex.name}</span>
                             <small class="exercise-item-stats">${ex.trackType || 'reps'}</small>
@@ -107,11 +119,11 @@ const ExercisesPage = (function() {
             if (ex) {
                 ex.name = name;
                 ex.type = type;
-                ex.image = state.currentImage;
+                ex.images = state.currentImages;
                 ex.trackType = trackType;
             }
         } else {
-            const newEx = { id: Date.now(), name, type, image: state.currentImage, trackType };
+            const newEx = { id: Date.now(), name, type, images: state.currentImages, trackType };
             allExercises.push(newEx);
         }
         DB.save();
@@ -140,44 +152,48 @@ const ExercisesPage = (function() {
             const ex = DB.getExercises().find(e => e.id === id);
             if (ex) {
                 resetForm();
-                state = { isEditing: true, id: id, currentImage: ex.image };
+                state.isEditing = true;
+                state.id = id;
+                state.currentImages = [...(ex.images || [])];
                 editingIdInput.value = ex.id;
                 nameInput.value = ex.name;
                 typeSelect.value = ex.type;
                 trackTypeSelect.value = ex.trackType || 'reps';
-                if (ex.image) {
-                    thumbnail.src = ex.image;
-                    thumbnail.classList.remove('hidden');
-                    removeImageBtn.classList.remove('hidden');
-                }
+                renderThumbnails();
                 submitBtn.textContent = 'Update Exercise';
+                cancelBtn.classList.remove('hidden');
                 validateForm();
-                page.querySelector('main').scrollTo(0, 0);
+                mainScroll.scrollTo({ top: 0, behavior: 'smooth' });
                 nameInput.focus();
                 App.resetSwipe();
             }
         } else if (thumbnail) {
             const id = parseInt(thumbnail.dataset.id);
             const ex = DB.getExercises().find(e => e.id === id);
-            if (ex && ex.image) {
-                fullSizeImage.src = ex.image;
-                UI.openModal(imageViewerModal);
+            if (ex && ex.images && ex.images.length > 0) {
+                Modals.openImageViewer(ex.images);
             }
         }
     }
 
     async function handleImageUpload(event) {
-        const file = event.target.files[0];
-        if (file) {
+        const files = event.target.files;
+        if (files.length > 0) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
             try {
-                const compressedDataUrl = await UI.compressImage(file);
-                state.currentImage = compressedDataUrl;
-                thumbnail.src = compressedDataUrl;
-                thumbnail.classList.remove('hidden');
-                removeImageBtn.classList.remove('hidden');
+                for (const file of files) {
+                    const compressedDataUrl = await UI.compressImage(file);
+                    state.currentImages.push(compressedDataUrl);
+                }
+                renderThumbnails();
             } catch (error) {
                 console.error("Image compression failed:", error);
-                alert("Could not process image.");
+                alert("Could not process one or more images.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = state.isEditing ? 'Update Exercise' : 'Save to Exercise List';
+                imageInput.value = '';
             }
         }
     }
@@ -188,20 +204,20 @@ const ExercisesPage = (function() {
         form.addEventListener('submit', handleFormSubmit);
         form.addEventListener('input', validateForm);
         imageInput.addEventListener('change', handleImageUpload);
-        removeImageBtn.addEventListener('click', () => {
-            state.currentImage = null;
-            imageInput.value = '';
-            thumbnail.classList.add('hidden');
-            removeImageBtn.classList.add('hidden');
+        cancelBtn.addEventListener('click', resetForm);
+        
+        thumbnailContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('thumbnail-remove-btn')) {
+                const index = parseInt(e.target.dataset.index);
+                state.currentImages.splice(index, 1);
+                renderThumbnails();
+            }
         });
+        
         exerciseListDiv.addEventListener('click', handleListClick);
-        fullSizeImage.addEventListener('click', () => UI.closeModal(imageViewerModal));
     }
 
-    // Public API
     return {
-        init,
-        render,
-        resetForm
+        init
     };
 })();
