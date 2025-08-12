@@ -34,7 +34,7 @@ const editWorkoutExerciseModal = document.getElementById('edit-workout-exercise-
 const instructionsModal = document.getElementById('instructions-modal'), instructionsModalTitle = document.getElementById('instructions-modal-title'), instructionsModalContent = document.getElementById('instructions-modal-content'), closeInstructionsModalBtn = document.getElementById('close-instructions-modal-btn');
 
 const circleCircumference = 2 * Math.PI * 54;
-const SWIPE_ACTION_WIDTH = 160;
+const SWIPE_ACTION_WIDTH = 160; 
 const SWIPE_ACTION_WIDTH_WORKOUT = 240;
 
 // --- 2. CORE LOGIC & HELPER FUNCTIONS ---
@@ -48,83 +48,38 @@ function closeModal(modalElement) { modalElement.classList.add('hidden'); }
 function getFormattedDate(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
 function compressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.7) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = event => { const img = new Image(); img.src = event.target.result; img.onload = () => { const canvas = document.createElement('canvas'); let width = img.width; let height = img.height; if (width > height) { if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; } } else { if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; } } canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg', quality)); }; img.onerror = error => reject(error); }; reader.onerror = error => reject(error); }); }
 
-function startCountdown(duration, nextExercise = null) {
-    // ... countdown logic ...
-}
-
-function closeCountdownModal() { clearInterval(countdownIntervalId); countdownIntervalId = null; closeModal(countdownModal); }
-function formatStopwatchTime(ms) { const totalSeconds = Math.floor(ms / 1000); const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0'); const seconds = (totalSeconds % 60).toString().padStart(2, '0'); const milliseconds = Math.floor((ms % 1000) / 10).toString().padStart(2, '0'); return `${minutes}:${seconds}.${milliseconds}`; }
-function formatTotalTime(ms) {
-    // ... format time logic ...
-}
-
-
 // --- 3. RENDERING FUNCTIONS ---
 function renderCurrentPage() {
     const id = document.querySelector('.page.active').id;
-    if (id === 'exercises-page') {
-        renderExerciseDatabase();
-    }
-    if (id === 'routines-page') {
-        populateExerciseDropdown();
-        renderSavedRoutines();
-        handleRoutineExerciseChange();
-        initRoutineBuilderSortable();
-        initSavedRoutinesSortable();
-    }
-    if (id === 'workout-page') {
-        populateDailyRoutineDropdown();
-        renderWorkoutPage();
-        initDailyWorkoutSortable();
-    }
+    if (id === 'exercises-page') { renderExerciseDatabase(); }
+    if (id === 'routines-page') { populateExerciseDropdown(); renderSavedRoutines(); handleRoutineExerciseChange(); initRoutineBuilderSortable(); initSavedRoutinesSortable(); }
+    if (id === 'workout-page') { populateDailyRoutineDropdown(); renderWorkoutPage(); initDailyWorkoutSortable(); }
     renderDateControls();
 }
 function renderDateControls() { const today = new Date(); today.setHours(0, 0, 0, 0); currentDate.setHours(0, 0, 0, 0); const isToday = currentDate.getTime() === today.getTime(); dateDisplayBtn.textContent = isToday ? 'Today' : currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); nextDayBtn.disabled = currentDate >= today; }
 
 function renderExerciseDatabase() {
     dbExerciseListDiv.innerHTML = '';
-    if (allData.exerciseDatabase.length === 0) {
-        dbExerciseListDiv.innerHTML = `<div class="placeholder-card">Your exercise list is empty. Add one above to get started.</div>`;
-        return;
-    }
-
-    const exercisesByType = allData.exerciseDatabase.reduce((acc, ex) => {
-        const type = ex.type || 'Uncategorized';
-        if (!acc[type]) acc[type] = [];
-        acc[type].push(ex);
-        return acc;
-    }, {});
-
+    if (allData.exerciseDatabase.length === 0) { dbExerciseListDiv.innerHTML = `<div class="placeholder-card">Your exercise list is empty. Add one above to get started.</div>`; return; }
+    const exercisesByType = allData.exerciseDatabase.reduce((acc, ex) => { (acc[ex.type] = acc[ex.type] || []).push(ex); return acc; }, {});
     Object.keys(exercisesByType).sort().forEach(type => {
         const groupCard = document.createElement('div');
         groupCard.className = 'card exercise-group-card';
-        
-        const header = document.createElement('h3');
-        header.textContent = type;
-        groupCard.appendChild(header);
-        
+        groupCard.innerHTML = `<h3>${type}</h3>`;
         const listContainer = document.createElement('div');
         listContainer.className = 'exercise-group-list';
-
-        const sortedDb = exercisesByType[type].sort((a, b) => a.name.localeCompare(b.name));
-
-        sortedDb.forEach(ex => {
+        exercisesByType[type].sort((a, b) => a.name.localeCompare(b.name)).forEach(ex => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'swipe-item-container';
-            // Ensure ex.images exists and is an array. Handle legacy `ex.image`
-            const imageSource = (ex.images && ex.images.length > 0) ? ex.images[0] : (ex.image || '');
-            
+            const imageSource = (ex.images && ex.images.length > 0) ? ex.images[0] : '';
             itemDiv.innerHTML = `
                 <div class="swipe-content">
                     <img src="${imageSource}" class="db-item-thumbnail" style="${!imageSource ? 'background-color: var(--color-background);' : ''}">
-                    <div class="exercise-item-main">
-                        <span class="exercise-item-name">${ex.name}</span>
-                        <small class="exercise-item-stats">${ex.trackType || 'reps'}</small>
-                    </div>
+                    <div class="exercise-item-main"><span class="exercise-item-name">${ex.name}</span><small class="exercise-item-stats">${ex.trackType || 'reps'}</small></div>
                 </div>
                 <div class="swipe-actions">
-                    <button class="swipe-action-btn swipe-edit-btn" data-id="${ex.id}"><!-- ... SVG ... --></button>
-                    <button class="swipe-action-btn swipe-delete-btn" data-id="${ex.id}"><!-- ... SVG ... --></button>
+                    <button class="swipe-action-btn swipe-edit-btn" data-id="${ex.id}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13.854 2.146a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.708 0l-2.5-2.5a.5.5 0 1 1 .708-.708L3.5 11.293l9.646-9.647a.5.5 0 0 1 .708 0zM12.5 4.5a.5.5 0 0 0-1 0v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 0-1h-1z"/></svg><span>Edit</span></button>
+                    <button class="swipe-action-btn swipe-delete-btn" data-id="${ex.id}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M6 2a2 2 0 0 0-2 2v1H2.5a.5.5 0 0 0 0 1h1V15a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V6h1a.5.5 0 0 0 0-1H14V4a2 2 0 0 0-2-2H6zm1 2h4v1H7V4zM5 6h8v9H5V6z"/></svg><span>Delete</span></button>
                 </div>`;
             listContainer.appendChild(itemDiv);
         });
@@ -133,30 +88,24 @@ function renderExerciseDatabase() {
     });
 }
 
-
-function populateExerciseDropdown(selectElement = routineExerciseSelect) {
-    // ... dropdown population logic ...
-}
-function populateDailyRoutineDropdown() {
-    // ... dropdown population logic ...
-}
+function populateExerciseDropdown(selectElement = routineExerciseSelect) { /* ... */ }
+function populateDailyRoutineDropdown() { /* ... */ }
 
 function renderSavedRoutines() {
     savedRoutinesList.innerHTML = '';
-    if (allData.routines.length === 0) {
-        savedRoutinesList.innerHTML = `<div class="placeholder-card" style="margin-top: 16px;">You haven't created any routines yet.</div>`;
-        return;
-    }
+    if (allData.routines.length === 0) { savedRoutinesList.innerHTML = `<div class="placeholder-card" style="margin-top: 16px;">You haven't created any routines yet.</div>`; return; }
     allData.routines.forEach(r => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'swipe-item-container sortable-item';
         itemDiv.dataset.id = r.id;
         const sets = r.exercises.reduce((s, ex) => s + parseInt(ex.sets), 0);
         itemDiv.innerHTML = `
-            <div class="swipe-content"><!-- ... --></div>
+            <div class="swipe-content">
+                <div class="exercise-item-main" style="text-align:center;"><span class="exercise-item-name">${r.name}</span><small class="exercise-item-stats">${r.exercises.length} exercises • ${sets} total sets</small></div>
+            </div>
             <div class="swipe-actions">
-                 <button class="swipe-action-btn swipe-edit-btn" data-id="${r.id}"><!-- ... SVG ... --></button>
-                <button class="swipe-action-btn swipe-delete-btn" data-id="${r.id}"><!-- ... SVG ... --></button>
+                 <button class="swipe-action-btn swipe-edit-btn" data-id="${r.id}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13.854 2.146a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.708 0l-2.5-2.5a.5.5 0 1 1 .708-.708L3.5 11.293l9.646-9.647a.5.5 0 0 1 .708 0zM12.5 4.5a.5.5 0 0 0-1 0v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 0-1h-1z"/></svg><span>Edit</span></button>
+                <button class="swipe-action-btn swipe-delete-btn" data-id="${r.id}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M6 2a2 2 0 0 0-2 2v1H2.5a.5.5 0 0 0 0 1h1V15a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V6h1a.5.5 0 0 0 0-1H14V4a2 2 0 0 0-2-2H6zm1 2h4v1H7V4zM5 6h8v9H5V6z"/></svg><span>Delete</span></button>
             </div>`;
         savedRoutinesList.appendChild(itemDiv);
     });
@@ -166,18 +115,8 @@ function renderWorkoutPage() {
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
     resetSwipeState();
-
-    if (!workoutData) {
-        routineSelectionArea.classList.remove('hidden');
-        activeRoutineInfo.classList.add('hidden');
-        activeRoutineDisplay.innerHTML = `<div class="placeholder-card">Select a routine and click "Start" to see your exercises.</div>`;
-        return;
-    }
-
-    if (workoutData.isComplete) {
-        // ... summary rendering logic ...
-        return;
-    }
+    if (!workoutData) { /* ... placeholder ... */ return; }
+    if (workoutData.isComplete) { /* ... summary view ... */ return; }
 
     routineSelectionArea.classList.add('hidden');
     activeRoutineInfo.classList.remove('hidden');
@@ -187,42 +126,46 @@ function renderWorkoutPage() {
 
     workoutData.routine.exercises.forEach((exercise) => {
         const progress = workoutData.progress.find(p => p.instanceId === exercise.instanceId);
-        // ... rendering logic ...
+        if (!progress) return;
+        const isFinished = progress.setsCompleted >= exercise.sets;
+        let isCurrent = false;
+        if (!isFinished && !isCurrentExerciseFound) { isCurrent = true; isCurrentExerciseFound = true; }
+        
         const images = (exercise.images && exercise.images.length > 0) ? exercise.images : (exercise.image ? [exercise.image] : []);
         let imageHTML = '<div class="single-image-container"><div class="db-item-thumbnail" style="width:100%; height:100%; background-color: var(--color-background);"></div></div>';
         if (images.length > 0) {
             if (images.length > 1) {
                 const slides = images.map(img => `<div class="carousel-slide"><img src="${img}" alt="${exercise.name}"></div>`).join('');
                 const dots = images.map((_, i) => `<div class="carousel-dot ${i === 0 ? 'active' : ''}" data-slide-index="${i}"></div>`).join('');
-                imageHTML = `<div class="exercise-image-carousel" data-instance-id="${exercise.instanceId}" data-current-slide="0">
-                                <div class="carousel-track" style="width: ${images.length * 100}%">${slides}</div>
-                                <div class="carousel-dots">${dots}</div>
-                             </div>`;
+                imageHTML = `<div class="exercise-image-carousel" data-instance-id="${exercise.instanceId}" data-current-slide="0"><div class="carousel-track" style="width: ${images.length * 100}%">${slides}</div><div class="carousel-dots">${dots}</div></div>`;
             } else {
                 imageHTML = `<div class="single-image-container"><img src="${images[0]}" alt="${exercise.name}"></div>`;
             }
         }
         
         const itemDiv = document.createElement('div');
-        // ... rest of the itemDiv innerHTML logic ...
+        itemDiv.className = `active-routine-exercise sortable-item ${isCurrent ? 'current' : ''} ${isFinished ? 'finished' : ''}`;
+        itemDiv.dataset.instanceId = exercise.instanceId;
+        // ... stats and tracking UI logic ...
+        itemDiv.innerHTML = `
+            <div class="swipe-item-container">
+                <div class="swipe-content">
+                    <div class="exercise-content">
+                        ${imageHTML}
+                        <!-- ... rest of content ... -->
+                    </div>
+                </div>
+                <div class="swipe-actions"><!-- ... --></div>
+            </div>`;
         activeRoutineDisplay.appendChild(itemDiv);
     });
 }
 
-
 // --- 4. SORTABLE & DRAG/DROP ---
-const sortableOptions = {
-    animation: 150,
-    ghostClass: 'sortable-ghost',
-    chosenClass: 'sortable-chosen',
-    handle: '.swipe-content',
-    delay: 200, 
-    delayOnTouchOnly: true
-};
-
+const sortableOptions = { animation: 150, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', delay: 200, delayOnTouchOnly: true };
 function initRoutineBuilderSortable() { if (routineBuilderSortable) routineBuilderSortable.destroy(); routineBuilderSortable = new Sortable(routineBuilderList, { ...sortableOptions, handle:'.routine-builder-item', onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); } }); }
-function initDailyWorkoutSortable() { if (dailyWorkoutSortable) dailyWorkoutSortable.destroy(); const workoutData = allData.history[getFormattedDate(currentDate)]; if (!workoutData) return; dailyWorkoutSortable = new Sortable(activeRoutineDisplay, { ...sortableOptions, onEnd: (evt) => { const movedItem = workoutData.routine.exercises.splice(evt.oldIndex, 1)[0]; workoutData.routine.exercises.splice(evt.newIndex, 0, movedItem); const movedProgress = workoutData.progress.splice(evt.oldIndex, 1)[0]; workoutData.progress.splice(evt.newIndex, 0, movedProgress); saveDataToLocalStorage(); renderWorkoutPage(); } }); }
-function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesSortable.destroy(); savedRoutinesSortable = new Sortable(savedRoutinesList, { ...sortableOptions, onEnd: (evt) => { const movedItem = allData.routines.splice(evt.oldIndex, 1)[0]; allData.routines.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } }); }
+function initDailyWorkoutSortable() { if (dailyWorkoutSortable) dailyWorkoutSortable.destroy(); const workoutData = allData.history[getFormattedDate(currentDate)]; if (!workoutData) return; dailyWorkoutSortable = new Sortable(activeRoutineDisplay, { ...sortableOptions, handle:'.swipe-content', onEnd: (evt) => { const movedItem = workoutData.routine.exercises.splice(evt.oldIndex, 1)[0]; workoutData.routine.exercises.splice(evt.newIndex, 0, movedItem); const movedProgress = workoutData.progress.splice(evt.oldIndex, 1)[0]; workoutData.progress.splice(evt.newIndex, 0, movedProgress); saveDataToLocalStorage(); renderWorkoutPage(); } }); }
+function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesSortable.destroy(); savedRoutinesSortable = new Sortable(savedRoutinesList, { ...sortableOptions, handle:'.swipe-content', onEnd: (evt) => { const movedItem = allData.routines.splice(evt.oldIndex, 1)[0]; allData.routines.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } }); }
 
 // --- 5. EVENT HANDLER & WORKFLOW FUNCTIONS ---
 function handleAddOrUpdateDbEntry(event) {
@@ -238,7 +181,7 @@ function handleAddOrUpdateDbEntry(event) {
         if (ex) {
             ex.name = name; ex.type = type; ex.trackType = trackType;
             ex.instructions = instructions; ex.images = images;
-            delete ex.image; // Remove legacy single image property
+            delete ex.image; 
         }
     } else {
         const newEx = { id: Date.now(), name, type, trackType, instructions, images };
@@ -250,7 +193,7 @@ function handleAddOrUpdateDbEntry(event) {
 }
 // ... other functions ...
 
-// --- [REVISED] 7. EVENT LISTENERS ---
+// --- 6. EVENT LISTENERS ---
 navWorkout.addEventListener('click', () => showPage('workout-page'));
 navRoutines.addEventListener('click', () => showPage('routines-page'));
 navExercises.addEventListener('click', () => showPage('exercises-page'));
@@ -263,7 +206,7 @@ dbImagePreviewContainer.addEventListener('click', e => { /* ... */ });
 
 let touchStartX = 0, touchStartY = 0, touchCurrentX = 0;
 let swipeTarget = null, isSwiping = false, swipeDirection = null;
-function resetSwipeState() { if (swipeState.openCardContent) { swipeState.openCardContent.style.transform = 'translateX(0px)'; } touchStartX = 0; touchStartY = 0; touchCurrentX = 0; swipeTarget = null; isSwiping = false; swipeDirection = null; swipeState.openCardContent = null; document.body.style.overflow = ''; }
+function resetSwipeState() { if (swipeState.openCardContent) { swipeState.openCardContent.style.transform = 'translateX(0px)'; } touchStartX = 0; touchStartY = 0; touchCurrentX = 0; swipeTarget = null; isSwiping = false; swipeDirection = null; document.body.style.overflow = ''; }
 
 appContainer.addEventListener('touchstart', e => {
     const target = e.target.closest('.swipe-content');
@@ -308,11 +251,9 @@ appContainer.addEventListener('touchmove', e => {
 
 appContainer.addEventListener('touchend', e => {
     if (!swipeTarget || !isSwiping) { resetSwipeState(); return; };
-    
     const diffX = touchCurrentX - touchStartX;
     swipeTarget.style.transition = 'transform 0.3s ease-out';
     const SWIPE_WIDTH = swipeTarget.closest('#active-routine-display') ? SWIPE_ACTION_WIDTH_WORKOUT : SWIPE_ACTION_WIDTH;
-    
     const wasOpen = swipeState.openCardContent === swipeTarget;
     if (wasOpen) {
         if (diffX > 60) { swipeTarget.style.transform = 'translateX(0px)'; swipeState.openCardContent = null; } 
@@ -322,33 +263,43 @@ appContainer.addEventListener('touchend', e => {
         else { swipeTarget.style.transform = 'translateX(0px)'; }
     }
     swipeTarget = null; isSwiping = false; swipeDirection = null;
-    setTimeout(() => { document.body.style.overflow = ''; }, 300); // Re-enable scroll after transition
+    setTimeout(() => { document.body.style.overflow = ''; }, 300);
 });
-
 
 // [DELEGATED CLICK LISTENERS]
 document.addEventListener('click', e => {
     if (swipeState.openCardContent && !e.target.closest('.swipe-actions')) { resetSwipeState(); }
     if (e.target.classList.contains('modal-overlay')) { allModals.forEach(closeModal); }
+    if(e.target.closest('#actions-menu-btn')) { actionsDropdown.classList.toggle('hidden'); }
 });
 
-activeRoutineDisplay.addEventListener('click', e => {
-    // ... all workout-specific click actions, including carousel, instructions, logging sets, etc.
-});
+activeRoutineDisplay.addEventListener('click', e => { /* ... */ });
+dbExerciseListDiv.addEventListener('click', e => { /* ... */ });
+savedRoutinesList.addEventListener('click', e => { /* ... */ });
 
-dbExerciseListDiv.addEventListener('click', e => {
-    const deleteBtn = e.target.closest('.swipe-delete-btn');
-    const editBtn = e.target.closest('.swipe-edit-btn');
-    if(deleteBtn) { /* ... delete logic ... */ }
-    else if(editBtn) { /* ... edit logic ... */ }
-});
+// --- 7. INITIALIZE APP ---
+function migrateData() {
+    let dataUpdated = false;
+    if(allData.exerciseDatabase && Array.isArray(allData.exerciseDatabase)) {
+        allData.exerciseDatabase.forEach(ex => {
+            if (ex.image && typeof ex.image === 'string' && !Array.isArray(ex.images)) {
+                ex.images = [ex.image];
+                delete ex.image;
+                dataUpdated = true;
+            }
+        });
+    }
+    if (dataUpdated) {
+        saveDataToLocalStorage();
+    }
+}
 
-savedRoutinesList.addEventListener('click', e => {
-    const deleteBtn = e.target.closest('.swipe-delete-btn');
-    const editBtn = e.target.closest('.swipe-edit-btn');
-    if(deleteBtn) { /* ... delete logic ... */ }
-    else if(editBtn) { /* ... edit logic ... */ }
-});
-
-// ... Modal Logic, Init App ...
+function initializeApp() {
+    loadDataFromLocalStorage();
+    migrateData();
+    showPage('workout-page');
+    validateDbForm();
+    validateRoutineForm();
+    initRoutineBuilderSortable();
+}
 initializeApp();
