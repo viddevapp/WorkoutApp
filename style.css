@@ -1,42 +1,64 @@
+:root {
+    /* Define colors and sizes for easy changes */
+    --background: #1c1c1e;
+    --pad-bg: #464646;
+    --pad-active-bg: #007bff;
+    --pad-loaded-color: #f0f0f0;
+    --gap: 15px;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    overscroll-behavior: none; /* Prevents "pull-to-refresh" */
+}
+
 body {
-    background-color: #f0f2f5;
+    background-color: var(--background);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-direction: column;
-    height: 100vh;
-    margin: 0;
+    /* Use dynamic viewport height to account for mobile browser bars */
+    height: 100dvh;
 }
 
 .drum-machine {
     display: grid;
-    /* Creates 4 columns of equal width */
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px; /* Space between pads */
-    padding: 15px;
-    background-color: #ffffff;
-    border-radius: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    height: 100%;
+    padding: var(--gap);
+    box-sizing: border-box;
+    gap: var(--gap);
+    /* Default to a 2x4 grid for portrait mode */
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+}
+
+/* --- Media query for landscape orientation --- */
+@media (orientation: landscape) {
+    .drum-machine {
+        /* Switch to a 4x2 grid for landscape mode */
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+    }
 }
 
 .pad {
-    width: 70px;
-    height: 70px;
-    background-color: #e4e6eb;
-    border-radius: 15px; /* Rounded corners */
+    background-color: var(--pad-bg);
+    border-radius: 20px;
     cursor: pointer;
-    transition: all 0.07s ease; /* For a smooth press effect */
+    transition: transform 0.07s ease, background-color 0.07s ease;
+    -webkit-tap-highlight-color: transparent; /* Remove tap flash on mobile */
+    aspect-ratio: 1 / 1; /* Makes the pad a perfect square */
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 2em;
-    color: #8a8d91;
+    font-size: 2.5em;
+    color: var(--pad-loaded-color);
 }
 
-/* A class to add when a pad is active */
 .pad.active {
-    transform: scale(0.95);
-    background-color: #007bff;
-    box-shadow: 0 0 20px #007bff;
+    transform: scale(0.92);
+    background-color: var(--pad-active-bg);
 }

@@ -2,77 +2,80 @@ document.addEventListener('DOMContentLoaded', () => {
     const pads = document.querySelectorAll('.pad');
     const fileInput = document.getElementById('sound-file-input');
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const padSounds = new Map(); // To store the audio buffer for each pad
+    const padSounds = new Map(); // Stores the audio buffer for each pad
 
-    let pressTimer = null;
-    let longPress = false;
-    let activePad = null;
+    pads.forEach(pad => {
+        // Each pad gets its own timer variable. This is the key to the fix.
+        let pressTimer = null;
 
-    pads.forEach((pad, index) => {
-        const handlePressStart = () => {
-            longPress = false;
+        const handlePressStart = (event) => {
+            // Prevent default actions, especially on touch screens (like scrolling)
+            event.preventDefault();
+            
+            // Start a timer for this specific pad
             pressTimer = setTimeout(() => {
-                longPress = true;
-                activePad = pad;
-                // On long press, open the file chooser
+                // If timer completes, it's a long press.
+                // Open the file chooser for this pad.
+                fileInput.onchange = (e) => handleFileSelection(e, pad);
                 fileInput.click();
-            }, 500); // 500ms for a long press
+                pressTimer = null; // Clear timer after firing
+            }, 500); // 500ms threshold for a long press
         };
 
         const handlePressEnd = () => {
-            clearTimeout(pressTimer);
-            if (!longPress) {
-                // This is a tap, play the sound
+            // If the timer is still active when the user releases, it's a tap.
+            if (pressTimer) {
+                clearTimeout(pressTimer);
                 playSound(pad);
             }
         };
 
-        // For mouse users
+        // Assign events for both mouse and touch input
         pad.addEventListener('mousedown', handlePressStart);
         pad.addEventListener('mouseup', handlePressEnd);
-        pad.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+        pad.addEventListener('mouseleave', () => clearTimeout(pressTimer)); // Cancel if mouse leaves pad
 
-        // For touch screen users
-        pad.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Prevents mouse events from firing
-            handlePressStart();
-        });
+        pad.addEventListener('touchstart', handlePressStart);
         pad.addEventListener('touchend', handlePressEnd);
     });
 
-    // Handle the file selection
-    fileInput.addEventListener('change', (event) => {
+    const handleFileSelection = (event, selectedPad) => {
         const file = event.target.files[0];
-        if (file && activePad) {
-            const reader = new FileReader();
+        if (!file) return;
 
-            reader.onload = (e) => {
-                // Decode the audio file into a buffer
-                audioContext.decodeAudioData(e.target.result, (buffer) => {
-                    padSounds.set(activePad, buffer);
-                    activePad.textContent = '🎵'; // Add an icon to show a sound is loaded
-                });
-            };
-
-            reader.readAsArrayBuffer(file);
-        }
-        // Reset the input so the 'change' event fires even if the same file is selected
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            audioContext.decodeAudioData(e.target.result)
+                .then(buffer => {
+                    padSounds.set(selectedPad, buffer);
+                    selectedPad.textContent = '●'; // Indicate a sound is loaded
+                })
+                .catch(err => console.error("Error decoding audio file", err));
+        };
+        reader.readAsArrayBuffer(file);
+        
+        // Reset the input to allow selecting the same file again
         event.target.value = null;
-    });
+    };
 
     function playSound(pad) {
         const soundBuffer = padSounds.get(pad);
         if (soundBuffer) {
+            // Ensure audio context is running (required by modern browsers)
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            
             const source = audioContext.createBufferSource();
             source.buffer = soundBuffer;
             source.connect(audioContext.destination);
             source.start(0);
 
-            // Add a visual effect
+            // Add a visual effect for feedback
             pad.classList.add('active');
-            setTimeout(() => {
+            source.onended = () => {
                 pad.classList.remove('active');
-            }, 100);
+            };
         }
     }
 });
