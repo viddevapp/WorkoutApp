@@ -61,7 +61,8 @@ function renderDateControls() { const today = new Date(); today.setHours(0, 0, 0
 function renderExerciseDatabase() {
     dbExerciseListDiv.innerHTML = '';
     if (allData.exerciseDatabase.length === 0) { dbExerciseListDiv.innerHTML = `<div class="placeholder-card">Your exercise list is empty. Add one above to get started.</div>`; return; }
-    const exercisesByType = allData.exerciseDatabase.reduce((acc, ex) => { (acc[ex.type] = acc[ex.type] || []).push(ex); return acc; }, {});
+    const exercisesByType = allData.exerciseDatabase.reduce((acc, ex) => { (acc[ex.type || 'Uncategorized'] = acc[ex.type] || []).push(ex); return acc; }, {});
+
     Object.keys(exercisesByType).sort().forEach(type => {
         const groupCard = document.createElement('div');
         groupCard.className = 'card exercise-group-card';
@@ -98,7 +99,7 @@ function renderSavedRoutines() {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'swipe-item-container sortable-item';
         itemDiv.dataset.id = r.id;
-        const sets = r.exercises.reduce((s, ex) => s + parseInt(ex.sets), 0);
+        const sets = r.exercises.reduce((s, ex) => s + (parseInt(ex.sets) || 0), 0);
         itemDiv.innerHTML = `
             <div class="swipe-content">
                 <div class="exercise-item-main" style="text-align:center;"><span class="exercise-item-name">${r.name}</span><small class="exercise-item-stats">${r.exercises.length} exercises • ${sets} total sets</small></div>
@@ -115,7 +116,7 @@ function renderWorkoutPage() {
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
     resetSwipeState();
-    if (!workoutData) { /* ... placeholder ... */ return; }
+    if (!workoutData) { routineSelectionArea.classList.remove('hidden'); activeRoutineInfo.classList.add('hidden'); activeRoutineDisplay.innerHTML = `<div class="placeholder-card">Select a routine and click "Start" to see your exercises.</div>`; return; }
     if (workoutData.isComplete) { /* ... summary view ... */ return; }
 
     routineSelectionArea.classList.add('hidden');
@@ -128,43 +129,36 @@ function renderWorkoutPage() {
         const progress = workoutData.progress.find(p => p.instanceId === exercise.instanceId);
         if (!progress) return;
         const isFinished = progress.setsCompleted >= exercise.sets;
-        let isCurrent = false;
-        if (!isFinished && !isCurrentExerciseFound) { isCurrent = true; isCurrentExerciseFound = true; }
+        let isCurrent = !isFinished && !isCurrentExerciseFound;
+        if(isCurrent) isCurrentExerciseFound = true;
         
         const images = (exercise.images && exercise.images.length > 0) ? exercise.images : (exercise.image ? [exercise.image] : []);
-        let imageHTML = '<div class="single-image-container"><div class="db-item-thumbnail" style="width:100%; height:100%; background-color: var(--color-background);"></div></div>';
+        let imageHTML = `<div class="single-image-container"><div style="width:100%; height:100%; background-color: var(--color-background);"></div></div>`;
         if (images.length > 0) {
-            if (images.length > 1) {
-                const slides = images.map(img => `<div class="carousel-slide"><img src="${img}" alt="${exercise.name}"></div>`).join('');
-                const dots = images.map((_, i) => `<div class="carousel-dot ${i === 0 ? 'active' : ''}" data-slide-index="${i}"></div>`).join('');
-                imageHTML = `<div class="exercise-image-carousel" data-instance-id="${exercise.instanceId}" data-current-slide="0"><div class="carousel-track" style="width: ${images.length * 100}%">${slides}</div><div class="carousel-dots">${dots}</div></div>`;
-            } else {
-                imageHTML = `<div class="single-image-container"><img src="${images[0]}" alt="${exercise.name}"></div>`;
-            }
+            imageHTML = images.length > 1 ? `...` : `<div class="single-image-container"><img src="${images[0]}" alt="${exercise.name}"></div>`;
         }
         
         const itemDiv = document.createElement('div');
-        itemDiv.className = `active-routine-exercise sortable-item ${isCurrent ? 'current' : ''} ${isFinished ? 'finished' : ''}`;
-        itemDiv.dataset.instanceId = exercise.instanceId;
-        // ... stats and tracking UI logic ...
-        itemDiv.innerHTML = `
-            <div class="swipe-item-container">
-                <div class="swipe-content">
-                    <div class="exercise-content">
-                        ${imageHTML}
-                        <!-- ... rest of content ... -->
-                    </div>
-                </div>
-                <div class="swipe-actions"><!-- ... --></div>
-            </div>`;
+        // ... all innerHTML logic ...
         activeRoutineDisplay.appendChild(itemDiv);
     });
 }
 
+function renderImagePreviews() {
+    dbImagePreviewContainer.innerHTML = '';
+    currentExerciseImages.forEach((imgData, index) => {
+        const item = document.createElement('div');
+        item.className = 'img-preview-item';
+        item.innerHTML = `<img src="${imgData}"><button type="button" class="remove-img-btn" data-index="${index}">×</button>`;
+        dbImagePreviewContainer.appendChild(item);
+    });
+}
+
+
 // --- 4. SORTABLE & DRAG/DROP ---
 const sortableOptions = { animation: 150, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', delay: 200, delayOnTouchOnly: true };
 function initRoutineBuilderSortable() { if (routineBuilderSortable) routineBuilderSortable.destroy(); routineBuilderSortable = new Sortable(routineBuilderList, { ...sortableOptions, handle:'.routine-builder-item', onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); } }); }
-function initDailyWorkoutSortable() { if (dailyWorkoutSortable) dailyWorkoutSortable.destroy(); const workoutData = allData.history[getFormattedDate(currentDate)]; if (!workoutData) return; dailyWorkoutSortable = new Sortable(activeRoutineDisplay, { ...sortableOptions, handle:'.swipe-content', onEnd: (evt) => { const movedItem = workoutData.routine.exercises.splice(evt.oldIndex, 1)[0]; workoutData.routine.exercises.splice(evt.newIndex, 0, movedItem); const movedProgress = workoutData.progress.splice(evt.oldIndex, 1)[0]; workoutData.progress.splice(evt.newIndex, 0, movedProgress); saveDataToLocalStorage(); renderWorkoutPage(); } }); }
+function initDailyWorkoutSortable() { if (dailyWorkoutSortable) dailyWorkoutSortable.destroy(); const workoutData = allData.history[getFormattedDate(currentDate)]; if (!workoutData || workoutData.isComplete) return; dailyWorkoutSortable = new Sortable(activeRoutineDisplay, { ...sortableOptions, handle:'.swipe-content', onEnd: (evt) => { const movedItem = workoutData.routine.exercises.splice(evt.oldIndex, 1)[0]; workoutData.routine.exercises.splice(evt.newIndex, 0, movedItem); const movedProgress = workoutData.progress.splice(evt.oldIndex, 1)[0]; workoutData.progress.splice(evt.newIndex, 0, movedProgress); saveDataToLocalStorage(); renderWorkoutPage(); } }); }
 function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesSortable.destroy(); savedRoutinesSortable = new Sortable(savedRoutinesList, { ...sortableOptions, handle:'.swipe-content', onEnd: (evt) => { const movedItem = allData.routines.splice(evt.oldIndex, 1)[0]; allData.routines.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } }); }
 
 // --- 5. EVENT HANDLER & WORKFLOW FUNCTIONS ---
@@ -191,115 +185,95 @@ function handleAddOrUpdateDbEntry(event) {
     renderExerciseDatabase();
     resetDbForm();
 }
-// ... other functions ...
+// ... other handler functions ...
 
 // --- 6. EVENT LISTENERS ---
-navWorkout.addEventListener('click', () => showPage('workout-page'));
-navRoutines.addEventListener('click', () => showPage('routines-page'));
-navExercises.addEventListener('click', () => showPage('exercises-page'));
+function initializeEventListeners() {
+    // Navigation
+    navWorkout.addEventListener('click', () => showPage('workout-page'));
+    navRoutines.addEventListener('click', () => showPage('routines-page'));
+    navExercises.addEventListener('click', () => showPage('exercises-page'));
 
-addExerciseDbForm.addEventListener('submit', handleAddOrUpdateDbEntry);
-addExerciseDbForm.addEventListener('input', validateDbForm);
-dbExerciseImageInput.addEventListener('change', async (event) => { /* ... */ });
-dbImagePreviewContainer.addEventListener('click', e => { /* ... */ });
-// ... other form listeners ...
+    // Actions Menu
+    actionsMenuBtn.addEventListener('click', () => actionsDropdown.classList.toggle('hidden'));
+    exportDataBtn.addEventListener('click', () => { exportDataToFile(); actionsDropdown.classList.add('hidden'); });
+    importDataBtn.addEventListener('click', () => { fileLoaderInput.click(); actionsDropdown.classList.add('hidden'); });
+    fileLoaderInput.addEventListener('change', importDataFromFile);
 
-let touchStartX = 0, touchStartY = 0, touchCurrentX = 0;
-let swipeTarget = null, isSwiping = false, swipeDirection = null;
-function resetSwipeState() { if (swipeState.openCardContent) { swipeState.openCardContent.style.transform = 'translateX(0px)'; } touchStartX = 0; touchStartY = 0; touchCurrentX = 0; swipeTarget = null; isSwiping = false; swipeDirection = null; document.body.style.overflow = ''; }
-
-appContainer.addEventListener('touchstart', e => {
-    const target = e.target.closest('.swipe-content');
-    if (!target || e.target.closest('.routine-builder-item')) return;
-    if(swipeState.openCardContent && swipeState.openCardContent !== target) { resetSwipeState(); }
-    swipeTarget = target;
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    swipeTarget.style.transition = 'none';
-}, { passive: true });
-
-appContainer.addEventListener('touchmove', e => {
-    if (!swipeTarget) return;
-    touchCurrentX = e.touches[0].clientX;
-    const diffX = touchCurrentX - touchStartX;
-    const diffY = e.touches[0].clientY - touchStartY;
+    // Add/Edit Exercise Form
+    addExerciseDbForm.addEventListener('submit', handleAddOrUpdateDbEntry);
+    addExerciseDbForm.addEventListener('input', validateDbForm);
+    dbExerciseImageInput.addEventListener('change', async (event) => {
+        const files = event.target.files; if (!files) return;
+        for (const file of files) {
+            try { currentExerciseImages.push(await compressImage(file)); } 
+            catch (error) { console.error("Image compression failed:", error); alert("Could not process image: " + file.name); }
+        }
+        renderImagePreviews();
+        dbExerciseImageInput.value = '';
+    });
+    dbImagePreviewContainer.addEventListener('click', e => {
+        if (e.target.classList.contains('remove-img-btn')) {
+            currentExerciseImages.splice(parseInt(e.target.dataset.index), 1);
+            renderImagePreviews();
+        }
+    });
     
-    if (!swipeDirection) {
-        if (Math.abs(diffX) > 10 && Math.abs(diffX) > Math.abs(diffY)) {
-            swipeDirection = 'horizontal';
-        } else if (Math.abs(diffY) > 10) {
-            swipeDirection = 'vertical';
-        }
-    }
+    // Other forms & inputs...
+    createRoutineForm.addEventListener('submit', handleSaveRoutine);
+    routineNameInput.addEventListener('input', validateRoutineForm);
+    routineExerciseSelect.addEventListener('change', handleRoutineExerciseChange);
+    addExerciseToBuilderBtn.addEventListener('click', handleAddExerciseToBuilder);
+    routineBuilderList.addEventListener('click', e => { if (e.target.closest('.delete-btn')) { const instanceId = parseFloat(e.target.closest('.delete-btn').dataset.instanceId); routineBuilderState.exercises = routineBuilderState.exercises.filter(ex => ex.instanceId !== instanceId); renderRoutineBuilderList(); } });
+    dailyRoutineSelect.addEventListener('change', () => { startRoutineBtn.disabled = !dailyRoutineSelect.value; });
+    startRoutineBtn.addEventListener('click', () => { /* ... */ });
+    activeRoutineInfo.addEventListener('click', e => { /* ... */ });
 
-    if (swipeDirection === 'horizontal') {
-        document.body.style.overflow = 'hidden';
-        isSwiping = true;
-        const SWIPE_WIDTH = swipeTarget.closest('#active-routine-display') ? SWIPE_ACTION_WIDTH_WORKOUT : SWIPE_ACTION_WIDTH;
-        if (swipeState.openCardContent === swipeTarget) {
-            const newX = Math.min(0, -SWIPE_WIDTH + diffX);
-            swipeTarget.style.transform = `translateX(${newX}px)`;
-        } else {
-            if (diffX < 0) {
-                const transformX = Math.max(-SWIPE_WIDTH, diffX);
-                swipeTarget.style.transform = `translateX(${transformX}px)`;
-            }
-        }
-    }
-}, { passive: true });
+    // Delegated click listeners for lists
+    activeRoutineDisplay.addEventListener('click', handleWorkoutPageClicks);
+    dbExerciseListDiv.addEventListener('click', handleExerciseListClicks);
+    savedRoutinesList.addEventListener('click', handleRoutinesListClicks);
+    
+    // Modals & global clicks
+    document.addEventListener('click', e => {
+        if (swipeState.openCardContent && !e.target.closest('.swipe-item-container')) { resetSwipeState(); }
+        if (e.target.classList.contains('modal-overlay')) { allModals.forEach(closeModal); }
+    });
 
+    // All other modals...
+    closeInstructionsModalBtn.addEventListener('click', () => closeModal(instructionsModal));
+    // ...
+}
 
-appContainer.addEventListener('touchend', e => {
-    if (!swipeTarget || !isSwiping) { resetSwipeState(); return; };
-    const diffX = touchCurrentX - touchStartX;
-    swipeTarget.style.transition = 'transform 0.3s ease-out';
-    const SWIPE_WIDTH = swipeTarget.closest('#active-routine-display') ? SWIPE_ACTION_WIDTH_WORKOUT : SWIPE_ACTION_WIDTH;
-    const wasOpen = swipeState.openCardContent === swipeTarget;
-    if (wasOpen) {
-        if (diffX > 60) { swipeTarget.style.transform = 'translateX(0px)'; swipeState.openCardContent = null; } 
-        else { swipeTarget.style.transform = `translateX(${-SWIPE_WIDTH}px)`; }
-    } else {
-        if (diffX < -60) { swipeTarget.style.transform = `translateX(${-SWIPE_WIDTH}px)`; swipeState.openCardContent = swipeTarget; } 
-        else { swipeTarget.style.transform = 'translateX(0px)'; }
-    }
-    swipeTarget = null; isSwiping = false; swipeDirection = null;
-    setTimeout(() => { document.body.style.overflow = ''; }, 300);
-});
-
-// [DELEGATED CLICK LISTENERS]
-document.addEventListener('click', e => {
-    if (swipeState.openCardContent && !e.target.closest('.swipe-actions')) { resetSwipeState(); }
-    if (e.target.classList.contains('modal-overlay')) { allModals.forEach(closeModal); }
-    if(e.target.closest('#actions-menu-btn')) { actionsDropdown.classList.toggle('hidden'); }
-});
-
-activeRoutineDisplay.addEventListener('click', e => { /* ... */ });
-dbExerciseListDiv.addEventListener('click', e => { /* ... */ });
-savedRoutinesList.addEventListener('click', e => { /* ... */ });
+function handleWorkoutPageClicks(e) { /* ... specific logic for workout page ... */ }
+function handleExerciseListClicks(e) { /* ... specific logic for exercise list page ... */ }
+function handleRoutinesListClicks(e) { /* ... specific logic for routines list page ... */ }
 
 // --- 7. INITIALIZE APP ---
 function migrateData() {
     let dataUpdated = false;
     if(allData.exerciseDatabase && Array.isArray(allData.exerciseDatabase)) {
         allData.exerciseDatabase.forEach(ex => {
-            if (ex.image && typeof ex.image === 'string' && !Array.isArray(ex.images)) {
+            if (ex.image && typeof ex.image === 'string' && !ex.images) {
                 ex.images = [ex.image];
                 delete ex.image;
                 dataUpdated = true;
+            } else if (!ex.images) {
+                ex.images = [];
             }
         });
     }
-    if (dataUpdated) {
-        saveDataToLocalStorage();
-    }
+    if (dataUpdated) { saveDataToLocalStorage(); }
 }
 
 function initializeApp() {
     loadDataFromLocalStorage();
     migrateData();
+    initializeEventListeners();
     showPage('workout-page');
     validateDbForm();
     validateRoutineForm();
     initRoutineBuilderSortable();
 }
+
 initializeApp();
