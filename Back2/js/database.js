@@ -1,16 +1,9 @@
-const MUSCLE_GROUPS = [
-    'abdominals', 'abductors', 'adductors', 'biceps', 'calves', 'chest', 
-    'forearms', 'glutes', 'hamstrings', 'lats', 'lower back', 'middle back', 
-    'neck', 'quadriceps', 'shoulders', 'traps', 'triceps'
-].sort();
-
 const DB = (function() {
     let allData = {
         exerciseDatabase: [],
         routines: [],
         history: {},
-        userGoals: { volume: 10000, sets: 25 },
-        userProfile: {}
+        userGoals: { volume: 10000, sets: 25 }
     };
 
     const getFormattedDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -24,23 +17,43 @@ const DB = (function() {
         }
     }
 
+    // --- DATA MIGRATION ---
     function migrateData(data) {
-        let migrationPerformed = false;
+        // Migration from single 'image' string to 'images' array
         if (data.exerciseDatabase && data.exerciseDatabase.length > 0) {
+            let migrationNeeded = false;
             data.exerciseDatabase.forEach(ex => {
                 if (typeof ex.image !== 'undefined' && ex.image !== null) {
-                    ex.images = ex.image ? [ex.image] : [];
+                    if (!ex.images) {
+                        ex.images = [];
+                    }
+                    if (ex.image) {
+                        ex.images.push(ex.image);
+                    }
                     delete ex.image;
-                    migrationPerformed = true;
+                    migrationNeeded = true;
+                } else if (!ex.images) {
+                    ex.images = [];
                 }
-                if (!ex.images) { ex.images = []; }
-                if (!ex.primaryMuscles) { ex.primaryMuscles = []; }
-                if (!ex.secondaryMuscles) { ex.secondaryMuscles = []; }
-                if (!ex.instructions) { ex.instructions = []; }
             });
+            if (migrationNeeded) console.log("Data migration performed: 'image' property converted to 'images' array.");
         }
-        if (migrationPerformed) {
-            console.log("Data migration performed for exercise properties.");
+        
+        // Hydrate old workout history with images array if missing
+        if (data.history) {
+             Object.values(data.history).forEach(day => {
+                if(day.routine && day.routine.exercises) {
+                    day.routine.exercises.forEach(ex => {
+                        if (typeof ex.image !== 'undefined' && ex.image !== null) {
+                            if (!ex.images) ex.images = [ex.image];
+                            delete ex.image;
+                        } else if (!ex.images) {
+                            const dbEx = data.exerciseDatabase.find(db => db.id === ex.id);
+                            ex.images = dbEx ? dbEx.images : [];
+                        }
+                    });
+                }
+            });
         }
         return data;
     }
@@ -51,7 +64,7 @@ const DB = (function() {
             try {
                 let p = JSON.parse(d);
                 if (p.exerciseDatabase && p.history && p.userGoals) {
-                    allData = migrateData(p);
+                    allData = migrateData(p); // Apply migration
                     if (!allData.routines) allData.routines = [];
                 }
             } catch (e) {
@@ -104,6 +117,7 @@ const DB = (function() {
         reader.readAsText(file);
     }
 
+    // Public API
     return {
         load: loadDataFromLocalStorage,
         save: saveDataToLocalStorage,
