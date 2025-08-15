@@ -53,18 +53,20 @@
                                 <input type="text" id="routine-exercise-input" placeholder="Search for an exercise...">
                                 <div id="autocomplete-results" class="hidden"></div>
                             </div>
-                            <div id="routine-track-type-toggle">
-                                <div id="reps-based-inputs">
-                                    <div class="inputs-grid">
-                                        <input type="number" id="routine-sets-input" placeholder="Sets" value="3">
-                                        <input type="text" id="routine-reps-input" placeholder="Reps (e.g., 8-12)">
-                                    </div>
+                            <div class="track-type-toggle">
+                                <button type="button" class="track-type-btn active" data-track-type="reps">Reps</button>
+                                <button type="button" class="track-type-btn" data-track-type="time">Time</button>
+                            </div>
+                            <div id="reps-based-inputs">
+                                <div class="inputs-grid">
+                                    <input type="number" id="routine-sets-input" placeholder="Sets" value="3">
+                                    <input type="text" id="routine-reps-input" placeholder="Reps (e.g., 8-12)">
                                 </div>
-                                <div id="time-based-inputs" class="hidden">
-                                     <div class="inputs-grid">
-                                        <input type="number" id="routine-time-sets-input" placeholder="Sets" value="3">
-                                        <input type="number" id="routine-duration-input" placeholder="Duration (sec)">
-                                    </div>
+                            </div>
+                            <div id="time-based-inputs" class="hidden">
+                                 <div class="inputs-grid">
+                                    <input type="number" id="routine-time-sets-input" placeholder="Sets" value="3">
+                                    <input type="number" id="routine-duration-input" placeholder="Duration (sec)">
                                 </div>
                             </div>
                             <button type="button" id="add-exercise-to-builder-btn" class="btn-secondary" aria-label="Add Exercise to Routine">Add Exercise</button>
@@ -100,7 +102,48 @@
     </div>
 
     <!-- Modals -->
-    <div id="image-viewer-modal" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content image-modal"><img id="full-size-image" alt="Full size exercise image"></div></div>
+    <div id="exercise-details-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content details-modal-content">
+            <div id="details-video-container"></div>
+            <h3 id="details-exercise-name"></h3>
+            <div class="details-tabs">
+                <button class="details-tab-btn active" data-tab="instructions">Instructions</button>
+                <button class="details-tab-btn" data-tab="muscles">Muscles</button>
+            </div>
+            <div id="details-tab-content"></div>
+            <button id="details-modal-close-btn" class="btn-secondary">Close</button>
+        </div>
+    </div>
+
+    <div id="add-to-routine-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3 id="add-to-routine-title">Add to Routine</h3>
+            <form id="add-to-routine-form">
+                <select id="add-to-routine-select" required><option value="" disabled selected>Choose a routine...</option></select>
+                <div class="inputs-grid">
+                    <input type="number" id="add-to-routine-sets" placeholder="Sets" value="3" required>
+                    <input type="text" id="add-to-routine-reps" placeholder="Reps (e.g., 8-12)" required>
+                </div>
+                <div class="form-actions" style="display: flex; gap: 12px; margin-top: 16px;">
+                    <button type="button" id="cancel-add-to-routine-btn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Exercise</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="routine-details-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3 id="routine-details-title">Routine Details</h3>
+            <div id="routine-details-list" class="scrollable-content" style="max-height: 60vh;"></div>
+            <div class="form-actions" style="margin-top: 16px;">
+                <button id="close-routine-details-btn" class="btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
     
     <div id="countdown-modal" class="modal hidden">
         <div class="modal-overlay"></div>
