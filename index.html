@@ -47,6 +47,30 @@
                     <form id="create-routine-form">
                         <input type="hidden" id="routine-editing-id">
                         <input type="text" id="routine-name-input" placeholder="Routine Name (e.g., Push Day A)" required>
+                        <div id="add-exercise-to-routine-controls">
+                            <p class="form-section-label">Add Exercises</p>
+                            <div class="autocomplete-container">
+                                <input type="text" id="routine-exercise-input" placeholder="Search for an exercise...">
+                                <div id="autocomplete-results" class="hidden"></div>
+                            </div>
+                            <div class="track-type-toggle">
+                                <button type="button" class="track-type-btn active" data-track-type="reps">Reps</button>
+                                <button type="button" class="track-type-btn" data-track-type="time">Time</button>
+                            </div>
+                            <div id="reps-based-inputs">
+                                <div class="inputs-grid">
+                                    <input type="number" id="routine-sets-input" placeholder="Sets" value="3">
+                                    <input type="text" id="routine-reps-input" placeholder="Reps (e.g., 8-12)">
+                                </div>
+                            </div>
+                            <div id="time-based-inputs" class="hidden">
+                                 <div class="inputs-grid">
+                                    <input type="number" id="routine-time-sets-input" placeholder="Sets" value="3">
+                                    <input type="number" id="routine-duration-input" placeholder="Duration (sec)">
+                                </div>
+                            </div>
+                            <button type="button" id="add-exercise-to-builder-btn" class="btn-secondary" aria-label="Add Exercise to Routine">Add Exercise</button>
+                        </div>
                         <div id="routine-builder-list"></div>
                         <div class="form-actions"><button type="submit" id="save-routine-btn" class="btn-primary" disabled>Save Routine</button></div>
                     </form>
@@ -107,6 +131,17 @@
                     <button type="submit" class="btn-primary">Add Exercise</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="routine-details-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3 id="routine-details-title">Routine Details</h3>
+            <div id="routine-details-list" class="scrollable-content" style="max-height: 60vh;"></div>
+            <div class="form-actions" style="margin-top: 16px;">
+                <button id="close-routine-details-btn" class="btn-secondary">Close</button>
+            </div>
         </div>
     </div>
     
