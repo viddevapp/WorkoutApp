@@ -122,21 +122,9 @@
             <h3 id="add-to-routine-title">Add to Routine</h3>
             <form id="add-to-routine-form">
                 <select id="add-to-routine-select" required><option value="" disabled selected>Choose a routine...</option></select>
-                <div class="track-type-toggle" style="margin-top: 16px;">
-                    <button type="button" class="track-type-btn active" data-track-type="reps">Reps</button>
-                    <button type="button" class="track-type-btn" data-track-type="time">Time</button>
-                </div>
-                <div id="add-to-routine-reps-inputs" style="margin-top: 12px;">
-                    <div class="inputs-grid">
-                        <input type="number" id="add-to-routine-sets" placeholder="Sets" value="3" required>
-                        <input type="text" id="add-to-routine-reps" placeholder="Reps (e.g., 8-12)" required>
-                    </div>
-                </div>
-                <div id="add-to-routine-time-inputs" class="hidden" style="margin-top: 12px;">
-                    <div class="inputs-grid">
-                        <input type="number" id="add-to-routine-time-sets" placeholder="Sets" value="3" required>
-                        <input type="number" id="add-to-routine-time-duration" placeholder="Duration (sec)" required>
-                    </div>
+                <div class="inputs-grid">
+                    <input type="number" id="add-to-routine-sets" placeholder="Sets" value="3" required>
+                    <input type="text" id="add-to-routine-reps" placeholder="Reps (e.g., 8-12)" required>
                 </div>
                 <div class="form-actions" style="display: flex; gap: 12px; margin-top: 16px;">
                     <button type="button" id="cancel-add-to-routine-btn" class="btn-secondary">Cancel</button>

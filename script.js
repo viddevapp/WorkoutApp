@@ -36,11 +36,12 @@ const swapExerciseModal = document.getElementById('swap-exercise-modal'), swapEx
 const editWorkoutExerciseModal = document.getElementById('edit-workout-exercise-modal'), editWorkoutExerciseForm = document.getElementById('edit-workout-exercise-form'), editModalTitle = document.getElementById('edit-modal-title'), editRepsBasedInputs = document.getElementById('edit-reps-based-inputs'), editTimeBasedInputs = document.getElementById('edit-time-based-inputs'), editSetsInput = document.getElementById('edit-sets-input'), editRepsInput = document.getElementById('edit-reps-input'), editTimeSetsInput = document.getElementById('edit-time-sets-input'), editDurationInput = document.getElementById('edit-duration-input'), cancelEditBtn = document.getElementById('cancel-edit-btn');
 const filterCategorySelect = document.getElementById('filter-category'), filterMuscleSelect = document.getElementById('filter-muscle'), filterTypeSelect = document.getElementById('filter-type'), sortExercisesSelect = document.getElementById('sort-exercises');
 const exerciseDetailsModal = document.getElementById('exercise-details-modal'), detailsVideoContainer = document.getElementById('details-video-container'), detailsExerciseName = document.getElementById('details-exercise-name'), detailsTabContent = document.getElementById('details-tab-content'), detailsModalCloseBtn = document.getElementById('details-modal-close-btn');
-const addToRoutineModal = document.getElementById('add-to-routine-modal'), addToRoutineForm = document.getElementById('add-to-routine-form'), addToRoutineTitle = document.getElementById('add-to-routine-title'), addToRoutineSelect = document.getElementById('add-to-routine-select'), addToRoutineSetsInput = document.getElementById('add-to-routine-sets'), addToRoutineRepsInput = document.getElementById('add-to-routine-reps'), cancelAddToRoutineBtn = document.getElementById('cancel-add-to-routine-btn'), addToRoutineRepsInputs = document.getElementById('add-to-routine-reps-inputs'), addToRoutineTimeInputs = document.getElementById('add-to-routine-time-inputs'), addToRoutineTimeSetsInput = document.getElementById('add-to-routine-time-sets'), addToRoutineTimeDurationInput = document.getElementById('add-to-routine-time-duration');
+const addToRoutineModal = document.getElementById('add-to-routine-modal'), addToRoutineForm = document.getElementById('add-to-routine-form'), addToRoutineTitle = document.getElementById('add-to-routine-title'), addToRoutineSelect = document.getElementById('add-to-routine-select'), addToRoutineSetsInput = document.getElementById('add-to-routine-sets'), addToRoutineRepsInput = document.getElementById('add-to-routine-reps'), cancelAddToRoutineBtn = document.getElementById('cancel-add-to-routine-btn');
+const routineDetailsModal = document.getElementById('routine-details-modal'), routineDetailsTitle = document.getElementById('routine-details-title'), routineDetailsList = document.getElementById('routine-details-list'), closeRoutineDetailsBtn = document.getElementById('close-routine-details-btn');
 
 const circleCircumference = 2 * Math.PI * 54;
 const SWIPE_ACTION_WIDTH = 160; // 2 buttons
-const SWIPE_ACTION_WIDTH_WORKOUT = 320; // 4 buttons
+const SWIPE_ACTION_WIDTH_WORKOUT = 240; // 3 buttons
 
 // --- 2. CORE LOGIC & HELPER FUNCTIONS ---
 function showPage(pageId) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); document.getElementById(pageId).classList.add('active'); document.getElementById(`nav-${pageId.split('-')[0]}`).classList.add('active'); closeStopwatchModal(true); renderCurrentPage(); }
@@ -61,15 +62,12 @@ function loadDataFromLocalStorage() {
 async function loadExercisesFromCSV() {
     try {
         const response = await fetch('Data.csv');
-        if (!response.ok) {
-             throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const csvText = await response.text();
         const lines = csvText.trim().split('\n');
         const headers = lines.shift().split(',').map(h => h.trim());
 
         const data = lines.map(line => {
-            if (!line) return null; // Skip empty lines
             const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             const obj = {};
             headers.forEach((header, i) => {
@@ -80,23 +78,21 @@ async function loadExercisesFromCSV() {
                 obj[header] = value.trim();
             });
             return obj;
-        }).filter(row => row && row['Exercise']); // Filter out nulls and rows without an Exercise name
+        });
 
         allData.exerciseDatabase = data.map((row, index) => ({
             id: Date.now() + index,
             name: row['Exercise'],
-            videoUrl: row['Video URL'] || '',
-            type: row['Type'] || 'N/A',
-            primaryMuscles: row['Primary Muscles'] || 'N/A',
-            secondaryMuscles: row['Secondary Muscles'] || 'N/A',
-            category: row['Workout Category'] || 'Uncategorized',
-            instructions: row['Instructions for Proper Form'] || 'No instructions provided.',
+            videoUrl: row['Video URL'],
+            type: row['Type'],
+            primaryMuscles: row['Primary Muscles'],
+            secondaryMuscles: row['Secondary Muscles'],
+            category: row['Workout Category'],
+            instructions: row['Instructions for Proper Form'],
             trackType: 'reps'
         }));
-
     } catch (error) {
         console.error('Failed to load or parse exercises from CSV:', error);
-        alert('Could not load the exercise database. Please check the console for errors.');
         if (!allData.exerciseDatabase) allData.exerciseDatabase = [];
     }
 }
@@ -184,14 +180,11 @@ function renderExerciseDatabase(filters = {}, sortBy = 'az') {
     if (filters.muscle) filteredData = filteredData.filter(ex => ex.primaryMuscles === filters.muscle);
     if (filters.type) filteredData = filteredData.filter(ex => ex.type === filters.type);
 
-    // Safer sorting
-    filteredData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    if (sortBy === 'za') {
-        filteredData.reverse();
-    }
+    if (sortBy === 'az') filteredData.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sortBy === 'za') filteredData.sort((a, b) => b.name.localeCompare(a.name));
 
     if (filteredData.length === 0) {
-        dbExerciseListDiv.innerHTML = `<div class="placeholder-card">No exercises found.</div>`;
+        dbExerciseListDiv.innerHTML = `<div class="placeholder-card">No exercises match your filters.</div>`;
         return;
     }
 
@@ -233,7 +226,6 @@ function renderExerciseDatabase(filters = {}, sortBy = 'az') {
         dbExerciseListDiv.appendChild(groupCard);
     });
 }
-
 
 function populateDailyRoutineDropdown() {
     dailyRoutineSelect.innerHTML = `<option value="" disabled selected>Select a routine to begin...</option>`;
@@ -388,10 +380,6 @@ function renderWorkoutPage() {
                     </div>
                 </div>
                 <div class="swipe-actions">
-                    <button class="swipe-action-btn swipe-details-btn" data-id="${exercise.exerciseId}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" /></svg>
-                        <span>Details</span>
-                    </button>
                     <button class="swipe-action-btn swipe-swap-btn" data-instance-id="${exercise.instanceId}">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M7.25 2.75a.75.75 0 00-1.5 0v11.5a.75.75 0 001.5 0V2.75zM12.75 2.75a.75.75 0 00-1.5 0v11.5a.75.75 0 001.5 0V2.75zM4 6.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75a.75.75 0 01-.75-.75zM4 13.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75a.75.75 0 01-.75-.75z" /></svg>
                         <span>Swap</span>
@@ -602,10 +590,7 @@ startRoutineBtn.addEventListener('click', () => {
     const sourceRoutine = allData.routines.find(r => r.id === id);
     if (sourceRoutine) {
         const dateKey = getFormattedDate(currentDate);
-        const hydratedExercises = sourceRoutine.exercises.map(leanEx => { 
-            const fullEx = allData.exerciseDatabase.find(dbEx => dbEx.id === leanEx.exerciseId); 
-            return { ...fullEx, ...leanEx, exerciseId: leanEx.exerciseId, instanceId: Date.now() + Math.random() }; 
-        });
+        const hydratedExercises = sourceRoutine.exercises.map(leanEx => { const fullEx = allData.exerciseDatabase.find(dbEx => dbEx.id === leanEx.exerciseId); return { ...fullEx, ...leanEx, instanceId: Date.now() + Math.random() }; });
         const progress = hydratedExercises.map(ex => ({ instanceId: ex.instanceId, setsCompleted: 0, loggedData: [], timer: { enabled: true, duration: 30 }, stopwatch: { elapsedTime: 0, isRunning: false, startTime: 0 } }));
         const workoutToLog = { name: sourceRoutine.name, id: sourceRoutine.id, exercises: hydratedExercises };
         allData.history[dateKey] = { routine: workoutToLog, progress, isComplete: false, startTime: Date.now(), completionTime: null, notes: '' };
@@ -760,12 +745,7 @@ appContainer.addEventListener('click', e => {
         const swapBtnWorkout = t.closest('.swipe-swap-btn');
         const deleteBtnWorkout = t.closest('.swipe-delete-btn');
         const editBtnWorkout = t.closest('.swipe-edit-btn');
-        const detailsBtnWorkout = t.closest('.swipe-details-btn');
-
-        if (detailsBtnWorkout) {
-            const id = parseInt(detailsBtnWorkout.dataset.id);
-            openDetailsModal(id);
-        } else if (deleteBtnWorkout) {
+        if (deleteBtnWorkout) {
              if (confirm("Delete this exercise from today's workout?")) {
                 const instanceId = parseFloat(deleteBtnWorkout.dataset.instanceId);
                 const dateKey = getFormattedDate(currentDate);
@@ -820,7 +800,7 @@ appContainer.addEventListener('click', e => {
 });
 
 // MODAL LOGIC
-swapExerciseForm.addEventListener('submit', e => { e.preventDefault(); const newExerciseId = parseInt(swapExerciseSelect.value); if (isNaN(newExerciseId) || !swipeState.instanceIdToSwap) return; const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; const exerciseIndex = workoutData.routine.exercises.findIndex(ex => ex.instanceId === swipeState.instanceIdToSwap); const progressIndex = workoutData.progress.findIndex(p => p.instanceId === swipeState.instanceIdToSwap); if (exerciseIndex === -1) return; const originalExercise = workoutData.routine.exercises[exerciseIndex]; const newExerciseDbEntry = allData.exerciseDatabase.find(dbEx => dbEx.id === newExerciseId); const newWorkoutExercise = { ...newExerciseDbEntry, sets: originalExercise.sets, reps: newExerciseDbEntry.trackType === 'reps' ? (originalExercise.reps || '8-12') : undefined, duration: newExerciseDbEntry.trackType === 'time' ? (originalExercise.duration || 60) : undefined, trackType: newExerciseDbEntry.trackType, instanceId: Date.now() + Math.random(), exerciseId: newExerciseId }; workoutData.routine.exercises.splice(exerciseIndex, 1, newWorkoutExercise); if (progressIndex > -1) { workoutData.progress[progressIndex].instanceId = newWorkoutExercise.instanceId; workoutData.progress[progressIndex].setsCompleted = 0; workoutData.progress[progressIndex].loggedData = [];} saveDataToLocalStorage(); renderWorkoutPage(); closeModal(swapExerciseModal); swipeState.instanceIdToSwap = null; });
+swapExerciseForm.addEventListener('submit', e => { e.preventDefault(); const newExerciseId = parseInt(swapExerciseSelect.value); if (isNaN(newExerciseId) || !swipeState.instanceIdToSwap) return; const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; const exerciseIndex = workoutData.routine.exercises.findIndex(ex => ex.instanceId === swipeState.instanceIdToSwap); const progressIndex = workoutData.progress.findIndex(p => p.instanceId === swipeState.instanceIdToSwap); if (exerciseIndex === -1) return; const originalExercise = workoutData.routine.exercises[exerciseIndex]; const newExerciseDbEntry = allData.exerciseDatabase.find(dbEx => dbEx.id === newExerciseId); const newWorkoutExercise = { ...newExerciseDbEntry, sets: originalExercise.sets, reps: newExerciseDbEntry.trackType === 'reps' ? (originalExercise.reps || '8-12') : undefined, duration: newExerciseDbEntry.trackType === 'time' ? (originalExercise.duration || 60) : undefined, trackType: newExerciseDbEntry.trackType, instanceId: Date.now() + Math.random(), exerciseId: newExerciseId }; workoutData.routine.exercises.splice(exerciseIndex, 1, newWorkoutExercise); if (progressIndex > -1) { workoutData.progress[progressIndex].instanceId = newWorkoutExercise.instanceId; } saveDataToLocalStorage(); renderWorkoutPage(); closeModal(swapExerciseModal); swipeState.instanceIdToSwap = null; });
 cancelSwapBtn.addEventListener('click', () => closeModal(swapExerciseModal));
 
 editWorkoutExerciseForm.addEventListener('submit', e => { e.preventDefault(); const instanceId = swipeState.instanceIdToEdit; if (!instanceId) return; const workoutData = allData.history[getFormattedDate(currentDate)]; const exercise = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId); if (exercise) { if (exercise.trackType === 'time') { const newSets = parseInt(editTimeSetsInput.value); const newDuration = parseInt(editDurationInput.value); if (newSets > 0) exercise.sets = newSets; if (newDuration > 0) exercise.duration = newDuration; } else { const newSets = parseInt(editSetsInput.value); const newReps = editRepsInput.value.trim(); if (newSets > 0) exercise.sets = newSets; if (newReps) exercise.reps = newReps; } saveDataToLocalStorage(); renderWorkoutPage(); closeModal(editWorkoutExerciseModal); swipeState.instanceIdToEdit = null; } });
@@ -840,23 +820,6 @@ actionsMenuBtn.addEventListener('click', () => actionsDropdown.classList.toggle(
 exportDataBtn.addEventListener('click', () => { exportDataToFile(); actionsDropdown.classList.add('hidden'); });
 importDataBtn.addEventListener('click', () => { fileLoaderInput.click(); actionsDropdown.classList.add('hidden'); });
 fileLoaderInput.addEventListener('change', importDataFromFile);
-
-function populateExerciseDropdown(selectElement, includeCurrent = false) {
-    const workoutData = allData.history[getFormattedDate(currentDate)];
-    const currentExerciseIds = workoutData ? workoutData.routine.exercises.map(ex => ex.exerciseId) : [];
-
-    selectElement.innerHTML = `<option value="" disabled selected>Choose replacement...</option>`;
-    const sortedExercises = [...allData.exerciseDatabase].sort((a, b) => a.name.localeCompare(b.name));
-    
-    sortedExercises.forEach(ex => {
-        if (includeCurrent || !currentExerciseIds.includes(ex.id)) {
-            const option = document.createElement('option');
-            option.value = ex.id;
-            option.textContent = ex.name;
-            selectElement.appendChild(option);
-        }
-    });
-}
 
 // --- NEW --- FILTERING AND DETAILS MODAL ---
 function populateFilterControls() {
@@ -889,11 +852,9 @@ function openDetailsModal(exerciseId) {
 
     detailsExerciseName.textContent = exercise.name;
     if (exercise.videoUrl) {
-        detailsVideoContainer.innerHTML = `<video src="${exercise.videoUrl}" controls autoplay loop muted playsinline style="position: relative; width: 100%; height: auto;"></video>`;
-        detailsVideoContainer.style.paddingTop = '0';
+        detailsVideoContainer.innerHTML = `<iframe src="${exercise.videoUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
     } else {
         detailsVideoContainer.innerHTML = '<div class="placeholder-card" style="margin:0; border-radius:0;">No video available.</div>';
-        detailsVideoContainer.style.paddingTop = '56.25%';
     }
     
     document.querySelector('.details-tab-btn.active').classList.remove('active');
@@ -929,13 +890,6 @@ function openAddToRoutineModal(id) {
     allData.routines.forEach(r => {
         addToRoutineSelect.innerHTML += `<option value="${r.id}">${r.name}</option>`;
     });
-
-    // Reset to default (reps) view
-    addToRoutineModal.querySelector('.track-type-btn[data-track-type="reps"]').classList.add('active');
-    addToRoutineModal.querySelector('.track-type-btn[data-track-type="time"]').classList.remove('active');
-    addToRoutineRepsInputs.classList.remove('hidden');
-    addToRoutineTimeInputs.classList.add('hidden');
-    
     openModal(addToRoutineModal);
 }
 
@@ -954,61 +908,33 @@ exerciseDetailsModal.addEventListener('click', e => {
     }
 });
 
-addToRoutineModal.addEventListener('click', e => {
-    if (e.target.matches('.track-type-btn')) {
-        const type = e.target.dataset.trackType;
-        addToRoutineModal.querySelector('.track-type-btn.active').classList.remove('active');
-        e.target.classList.add('active');
-        if (type === 'reps') {
-            addToRoutineRepsInputs.classList.remove('hidden');
-            addToRoutineTimeInputs.classList.add('hidden');
-        } else {
-            addToRoutineRepsInputs.classList.add('hidden');
-            addToRoutineTimeInputs.classList.remove('hidden');
-        }
-    }
-});
-
-
 addToRoutineForm.addEventListener('submit', e => {
     e.preventDefault();
     const routineId = parseInt(addToRoutineSelect.value);
-    const routine = allData.routines.find(r => r.id === routineId);
-    if (!routine) {
-        alert("Please select a valid routine.");
+    const sets = parseInt(addToRoutineSetsInput.value);
+    const reps = addToRoutineRepsInput.value.trim();
+
+    if (isNaN(routineId) || isNaN(sets) || !reps) {
+        alert("Please fill out all fields.");
         return;
     }
 
-    const trackType = addToRoutineModal.querySelector('.track-type-btn.active').dataset.trackType;
-    let exerciseData;
-
-    if (trackType === 'reps') {
-        const sets = parseInt(addToRoutineSetsInput.value);
-        const reps = addToRoutineRepsInput.value.trim();
-        if (isNaN(sets) || !reps || sets <= 0) {
-            alert("Please enter valid sets and reps.");
-            return;
-        }
-        exerciseData = { exerciseId: exerciseToAdd.id, sets, reps, trackType: 'reps' };
-    } else { // time
-        const sets = parseInt(addToRoutineTimeSetsInput.value);
-        const duration = parseInt(addToRoutineTimeDurationInput.value);
-        if (isNaN(sets) || isNaN(duration) || sets <= 0 || duration <= 0) {
-            alert("Please enter valid sets and duration.");
-            return;
-        }
-        exerciseData = { exerciseId: exerciseToAdd.id, sets, duration, trackType: 'time' };
+    const routine = allData.routines.find(r => r.id === routineId);
+    if (routine) {
+        routine.exercises.push({
+            exerciseId: exerciseToAdd.id,
+            sets,
+            reps,
+            trackType: 'reps'
+        });
+        saveDataToLocalStorage();
+        alert(`Added to ${routine.name}!`);
+        closeModal(addToRoutineModal);
+        showPage('routines-page');
+        const routineCard = document.querySelector(`.swipe-item-container[data-id="${routineId}"]`);
+        if(routineCard) routineCard.scrollIntoView({ behavior: 'smooth' });
     }
-    
-    routine.exercises.push(exerciseData);
-    saveDataToLocalStorage();
-    alert(`Added to ${routine.name}!`);
-    closeModal(addToRoutineModal);
-    showPage('routines-page');
-    const routineCard = document.querySelector(`.swipe-item-container[data-id="${routineId}"]`);
-    if(routineCard) routineCard.scrollIntoView({ behavior: 'smooth' });
 });
-
 cancelAddToRoutineBtn.addEventListener('click', () => closeModal(addToRoutineModal));
 
 // --- ROUTINE EDITOR AND DETAILS ---
