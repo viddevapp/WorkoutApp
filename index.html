@@ -84,20 +84,9 @@
                             <select id="db-exercise-type" required><option value="" disabled selected>Choose body part...</option><option value="Upper Body">Upper Body</option><option value="Lower Body">Lower Body</option><option value="Core">Core</option><option value="Full Body">Full Body</option></select>
                             <select id="db-exercise-track-type" required><option value="reps" selected>Track by Reps</option><option value="time">Track by Time</option></select>
                         </div>
-                        
-                        <div class="muscle-input-container">
-                            <label class="form-section-label">Primary Muscles</label>
-                            <div id="primary-muscles-tags" class="tags-container"></div>
-                            <button type="button" id="add-primary-muscle-btn" class="btn-add-muscle">+</button>
-                        </div>
-                        <div class="muscle-input-container">
-                            <label class="form-section-label">Secondary Muscles</label>
-                            <div id="secondary-muscles-tags" class="tags-container"></div>
-                            <button type="button" id="add-secondary-muscle-btn" class="btn-add-muscle">+</button>
-                        </div>
-                        
-                        <textarea id="db-instructions" placeholder="Instructions (one step per line)"></textarea>
-                        
+                        <textarea id="db-exercise-description" placeholder="Exercise Description (e.g., how to perform, common mistakes...)"></textarea>
+                        <input type="text" id="db-primary-muscles" placeholder="Primary Muscles (comma-separated)">
+                        <input type="text" id="db-secondary-muscles" placeholder="Secondary Muscles (comma-separated)">
                         <div class="file-input-container">
                             <label for="db-exercise-image-input" class="btn-secondary">Choose Images</label>
                             <input type="file" id="db-exercise-image-input" accept="image/*,image/gif" multiple>
@@ -118,38 +107,39 @@
     </div>
 
     <!-- Modals -->
-    <div id="exercise-details-modal" class="modal hidden">
+    <div id="exercise-detail-modal" class="modal hidden">
         <div class="modal-overlay"></div>
-        <div class="modal-content details-modal">
-            <div id="details-modal-header">
-                <h3 id="details-exercise-name">Exercise Name</h3>
-                <div id="details-muscle-tags" class="muscle-tags-container"></div>
+        <div class="modal-content">
+            <div id="detail-modal-image-container"></div>
+            <h2 id="detail-modal-name" style="margin-bottom: 12px;"></h2>
+            <div class="muscle-tags-container">
+                <div id="detail-modal-primary-muscles"></div>
+                <div id="detail-modal-secondary-muscles"></div>
             </div>
-            <div id="details-modal-tabs">
-                <button class="details-tab-btn active" data-tab="media">Media</button>
-                <button class="details-tab-btn" data-tab="instructions">Instructions</button>
+            <div class="detail-modal-section">
+                <h3>Description</h3>
+                <p id="detail-modal-description"></p>
             </div>
-            <div id="details-modal-content">
-                <div id="media-tab-content" class="details-tab-content active">
-                    <div id="image-viewer-content-wrapper">
-                        <div id="image-viewer-content"></div>
-                    </div>
-                    <button id="image-viewer-prev" class="image-viewer-nav-btn">&lt;</button>
-                    <button id="image-viewer-next" class="image-viewer-nav-btn">&gt;</button>
-                    <div id="image-viewer-dots"></div>
-                </div>
-                <div id="instructions-tab-content" class="details-tab-content">
-                    <ul id="details-instructions-list"></ul>
-                </div>
+            <div class="detail-modal-section anatomical-map">
+                 <h3>Muscle Map</h3>
+                 <!-- Placeholder for an SVG anatomical map -->
+                 <div style="text-align:center; background: var(--color-background); padding: 20px; border-radius: var(--radius-md); color: var(--color-text-tertiary);">Anatomical Map SVG Placeholder</div>
+            </div>
+            <div class="form-actions" style="margin-top: 24px;">
+                <button type="button" id="close-detail-modal-btn" class="btn-secondary">Close</button>
             </div>
         </div>
     </div>
 
-    <div id="muscle-select-modal" class="modal hidden">
+    <div id="image-viewer-modal" class="modal hidden">
         <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <h3 id="muscle-modal-title">Select a Muscle</h3>
-            <div id="muscle-modal-list" class="muscle-modal-list"></div>
+        <div class="modal-content image-modal">
+            <div id="image-viewer-content-wrapper">
+                <div id="image-viewer-content"></div>
+            </div>
+            <button id="image-viewer-prev" class="image-viewer-nav-btn">&lt;</button>
+            <button id="image-viewer-next" class="image-viewer-nav-btn">&gt;</button>
+            <div id="image-viewer-dots"></div>
         </div>
     </div>
     
@@ -173,6 +163,7 @@
             </div>
         </div>
     </div>
+
     <div id="stopwatch-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content stopwatch-content">
@@ -187,6 +178,7 @@
             </div>
         </div>
     </div>
+
     <div id="workout-complete-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content workout-complete-content">
@@ -198,6 +190,7 @@
             <button id="close-complete-modal-btn" class="btn-primary">View Summary</button>
         </div>
     </div>
+
     <div id="swap-exercise-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content">
@@ -212,6 +205,7 @@
             </form>
         </div>
     </div>
+
     <div id="edit-workout-exercise-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content">
