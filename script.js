@@ -61,12 +61,15 @@ function loadDataFromLocalStorage() {
 async function loadExercisesFromCSV() {
     try {
         const response = await fetch('Data.csv');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+             throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const csvText = await response.text();
         const lines = csvText.trim().split('\n');
         const headers = lines.shift().split(',').map(h => h.trim());
 
         const data = lines.map(line => {
+            if (!line) return null; // Skip empty lines
             const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             const obj = {};
             headers.forEach((header, i) => {
@@ -77,21 +80,23 @@ async function loadExercisesFromCSV() {
                 obj[header] = value.trim();
             });
             return obj;
-        });
+        }).filter(row => row && row['Exercise']); // Filter out nulls and rows without an Exercise name
 
         allData.exerciseDatabase = data.map((row, index) => ({
             id: Date.now() + index,
             name: row['Exercise'],
-            videoUrl: row['Video URL'],
-            type: row['Type'],
-            primaryMuscles: row['Primary Muscles'],
-            secondaryMuscles: row['Secondary Muscles'],
-            category: row['Workout Category'],
-            instructions: row['Instructions for Proper Form'],
+            videoUrl: row['Video URL'] || '',
+            type: row['Type'] || 'N/A',
+            primaryMuscles: row['Primary Muscles'] || 'N/A',
+            secondaryMuscles: row['Secondary Muscles'] || 'N/A',
+            category: row['Workout Category'] || 'Uncategorized',
+            instructions: row['Instructions for Proper Form'] || 'No instructions provided.',
             trackType: 'reps'
         }));
+
     } catch (error) {
         console.error('Failed to load or parse exercises from CSV:', error);
+        alert('Could not load the exercise database. Please check the console for errors.');
         if (!allData.exerciseDatabase) allData.exerciseDatabase = [];
     }
 }
@@ -179,11 +184,14 @@ function renderExerciseDatabase(filters = {}, sortBy = 'az') {
     if (filters.muscle) filteredData = filteredData.filter(ex => ex.primaryMuscles === filters.muscle);
     if (filters.type) filteredData = filteredData.filter(ex => ex.type === filters.type);
 
-    if (sortBy === 'az') filteredData.sort((a, b) => a.name.localeCompare(b.name));
-    else if (sortBy === 'za') filteredData.sort((a, b) => b.name.localeCompare(a.name));
+    // Safer sorting
+    filteredData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    if (sortBy === 'za') {
+        filteredData.reverse();
+    }
 
     if (filteredData.length === 0) {
-        dbExerciseListDiv.innerHTML = `<div class="placeholder-card">No exercises match your filters.</div>`;
+        dbExerciseListDiv.innerHTML = `<div class="placeholder-card">No exercises found.</div>`;
         return;
     }
 
@@ -225,6 +233,7 @@ function renderExerciseDatabase(filters = {}, sortBy = 'az') {
         dbExerciseListDiv.appendChild(groupCard);
     });
 }
+
 
 function populateDailyRoutineDropdown() {
     dailyRoutineSelect.innerHTML = `<option value="" disabled selected>Select a routine to begin...</option>`;
@@ -595,7 +604,6 @@ startRoutineBtn.addEventListener('click', () => {
         const dateKey = getFormattedDate(currentDate);
         const hydratedExercises = sourceRoutine.exercises.map(leanEx => { 
             const fullEx = allData.exerciseDatabase.find(dbEx => dbEx.id === leanEx.exerciseId); 
-            // Add exerciseId to the top level for the details button to work
             return { ...fullEx, ...leanEx, exerciseId: leanEx.exerciseId, instanceId: Date.now() + Math.random() }; 
         });
         const progress = hydratedExercises.map(ex => ({ instanceId: ex.instanceId, setsCompleted: 0, loggedData: [], timer: { enabled: true, duration: 30 }, stopwatch: { elapsedTime: 0, isRunning: false, startTime: 0 } }));
@@ -881,17 +889,11 @@ function openDetailsModal(exerciseId) {
 
     detailsExerciseName.textContent = exercise.name;
     if (exercise.videoUrl) {
-        // Simple regex to extract video ID for a more robust iframe source
-        const videoIdMatch = exercise.videoUrl.match(/\/(\d+)\/videos/);
-        const videoSrc = videoIdMatch ? `https://app-media-r2.fitbod.me/v2/${videoIdMatch[1]}/videos/full_720p.mp4` : exercise.videoUrl;
-        detailsVideoContainer.innerHTML = `<video src="${videoSrc}" controls autoplay loop muted playsinline></video>`;
-        // Re-style video container for video element
-        detailsVideoContainer.style.paddingTop = '0'; 
-        detailsVideoContainer.querySelector('video').style.position = 'relative';
-        detailsVideoContainer.querySelector('video').style.width = '100%';
-        detailsVideoContainer.querySelector('video').style.height = 'auto';
+        detailsVideoContainer.innerHTML = `<video src="${exercise.videoUrl}" controls autoplay loop muted playsinline style="position: relative; width: 100%; height: auto;"></video>`;
+        detailsVideoContainer.style.paddingTop = '0';
     } else {
         detailsVideoContainer.innerHTML = '<div class="placeholder-card" style="margin:0; border-radius:0;">No video available.</div>';
+        detailsVideoContainer.style.paddingTop = '56.25%';
     }
     
     document.querySelector('.details-tab-btn.active').classList.remove('active');
@@ -983,7 +985,7 @@ addToRoutineForm.addEventListener('submit', e => {
     if (trackType === 'reps') {
         const sets = parseInt(addToRoutineSetsInput.value);
         const reps = addToRoutineRepsInput.value.trim();
-        if (isNaN(sets) || !reps) {
+        if (isNaN(sets) || !reps || sets <= 0) {
             alert("Please enter valid sets and reps.");
             return;
         }
