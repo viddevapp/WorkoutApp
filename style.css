@@ -43,19 +43,12 @@ select { appearance: none; background-image: url('data:image/svg+xml;charset=US-
 .btn-primary:disabled, .btn-secondary:disabled, .btn-danger:disabled { background-color: var(--color-surface); color: var(--color-text-tertiary); cursor: not-allowed; border-color: var(--color-border); }
 .text-btn { background: none; border: none; color: var(--color-text-secondary); cursor: pointer; font-size: 14px; font-weight: 600; transition: var(--transition-fast); padding: 0; }
 .text-btn:hover { color: var(--color-primary); text-decoration: underline; }
-.file-input-container { display: flex; align-items: center; gap: 12px; }
-.file-input-container label.btn-secondary, .file-input-container button.btn-danger { flex-shrink: 0; width: auto; padding: 8px 16px; font-size: 14px; margin: 0; }
-.file-input-container input[type="file"] { display: none; }
-#db-exercise-thumbnail { width: 50px; height: 50px; border-radius: var(--radius-md); object-fit: cover; border: 1px solid var(--color-border); cursor: pointer; transition: var(--transition-fast); }
-#db-exercise-thumbnail:hover { transform: scale(1.05); box-shadow: 0 0 10px rgba(167, 139, 250, 0.4); }
 
 /* --- [REVISED] 6. GENERIC LIST, SWIPE & SORTABLE STYLES --- */
 .section-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--color-border); margin-bottom: 16px; }
 h2 { color: var(--color-text-primary); font-size: 18px; font-weight: 600; padding:0; margin: 0; }
 h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font-weight: 500;}
 .scrollable-content { flex-grow: 1; overflow-y: auto; }
-.db-item-thumbnail { width: 40px; height: 40px; border-radius: var(--radius-sm); object-fit: cover; flex-shrink: 0; cursor: pointer; transition: transform 0.2s; }
-.db-item-thumbnail:hover { transform: scale(1.1); }
 
 /* Sortable Styles */
 .sortable-item .swipe-content { cursor: grab; }
@@ -74,12 +67,11 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 
 /* 7. Specific Page Overrides */
 #exercises-page .card h3, #routines-page .card h3 { text-align: center; }
-.exercise-item-main { flex-grow: 1; text-align: left; padding: 0 12px; }
+.exercise-item-main { flex-grow: 1; text-align: left; }
 .exercise-item-name { font-size: 15px; font-weight: 500; display: block; margin-bottom: 2px;}
 .exercise-item-stats { color: var(--color-text-secondary); font-size: 13px; text-transform: capitalize; }
-#add-exercise-to-routine-controls { display: flex; flex-direction: column; gap: 16px; }
 .form-section-label { font-size: 14px; font-weight: 600; color: var(--color-text-secondary); margin-bottom: -8px; margin-top: 8px; border-bottom: 1px solid var(--color-border); padding-bottom: 8px; }
-#routine-builder-list { margin-top: 0; border-top: 1px solid var(--color-border); padding-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+#routine-builder-list { margin-top: 16px; border-top: 1px solid var(--color-border); padding-top: 16px; display: flex; flex-direction: column; gap: 12px; }
 .routine-builder-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background-color: var(--color-background); border-radius: var(--radius-md); border: 1px solid var(--color-border); user-select: none; }
 .routine-builder-item .exercise-item-main { text-align: center; }
 .form-actions { margin-top: 8px; }
@@ -87,11 +79,11 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 
 /* [REVISED] Exercise & Routine List Pages */
 #db-exercise-list, #saved-routines-list { display: flex; flex-direction: column; gap: 16px; }
-.exercise-group-card { padding: 0 0 16px; } /* Updated padding */
+.exercise-group-card { padding: 0 0 16px; }
 .exercise-group-card h3 { padding: 16px 16px 12px; border-bottom: 1px solid var(--color-border); }
 .exercise-group-list { display: flex; flex-direction: column; gap: 0; }
-.exercise-group-list .swipe-item-container { border-radius: 0; border-bottom: 1px solid var(--color-border); }
-.exercise-group-list .swipe-item-container:last-child { border-bottom: none; }
+.exercise-group-list .exercise-list-item { border-radius: 0; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; padding: 12px 16px; }
+.exercise-group-list .exercise-list-item:last-child { border-bottom: none; }
 #saved-routines-list .swipe-item-container { border: 1px solid var(--color-border); }
 
 /* Active Workout Page */
@@ -163,8 +155,6 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .modal.hidden { display: none; }
 .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(18, 18, 29, 0.7); backdrop-filter: blur(4px); }
 .modal-content { position: relative; z-index: 101; background-color: var(--color-surface); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); width: 100%; max-width: 400px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); }
-.modal-content.image-modal { background: none; border: none; box-shadow: none; padding: 0; width: auto; max-width: 90vw; max-height: 90vh; }
-#full-size-image { max-width: 100%; max-height: 100%; display: block; border-radius: var(--radius-lg); cursor: pointer; }
 
 .countdown-content { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; cursor: pointer; background-color: var(--color-surface-raised); }
 .countdown-timer-wrapper { position: relative; display: flex; align-items: center; justify-content: center; }
@@ -199,15 +189,27 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .workout-complete-time-info span { color: var(--color-text-primary); font-size: 36px; font-weight: 600; }
 
 /* --- NEW STYLES --- */
-/* Autocomplete for Routine Creation */
-.autocomplete-container { position: relative; }
-#autocomplete-results { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background-color: var(--color-surface-raised); border: 1px solid var(--color-border); border-radius: var(--radius-md); max-height: 200px; overflow-y: auto; z-index: 10; }
-.autocomplete-item { padding: 12px; cursor: pointer; border-bottom: 1px solid var(--color-border); }
-.autocomplete-item:last-child { border-bottom: none; }
-.autocomplete-item:hover { background-color: var(--color-primary); color: var(--color-text-on-primary); }
-.autocomplete-item small { display: block; color: var(--color-text-secondary); }
-.autocomplete-item:hover small { color: var(--color-text-on-primary); opacity: 0.8; }
-
 /* Filter Controls for Exercise Page */
 .filter-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .filter-controls select { width: 100%; }
+
+/* Exercise List Item Buttons */
+.exercise-list-actions { display: flex; gap: 8px; margin-left: auto; }
+.exercise-list-btn { background-color: var(--color-surface-raised); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition-fast); }
+.exercise-list-btn svg { width: 20px; height: 20px; color: var(--color-text-secondary); }
+.exercise-list-btn:hover { background-color: var(--color-primary); }
+.exercise-list-btn:hover svg { color: var(--color-text-on-primary); }
+
+/* Details Modal */
+.details-modal-content { padding: 0; overflow: hidden; }
+#details-video-container { width: 100%; background-color: #000; position: relative; padding-top: 56.25%; /* 16:9 Aspect Ratio */ }
+#details-video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+.details-modal-content h3 { padding: 16px 16px 0; margin: 0; font-size: 20px; }
+.details-tabs { display: flex; border-bottom: 1px solid var(--color-border); margin: 16px; }
+.details-tab-btn { flex: 1; padding: 12px; border: none; background: none; color: var(--color-text-secondary); font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: var(--transition-fast); }
+.details-tab-btn.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+#details-tab-content { padding: 0 16px 16px; min-height: 150px; line-height: 1.6; color: var(--color-text-secondary); }
+.details-muscle-list { list-style: none; padding: 0; }
+.details-muscle-list li { margin-bottom: 8px; }
+.details-muscle-list li strong { color: var(--color-text-primary); display: inline-block; width: 100px; }
+#details-modal-close-btn { margin: 0 16px 16px; }
