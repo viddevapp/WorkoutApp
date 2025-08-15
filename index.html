@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="script.js" defer></script>
 </head>
 <body>
     <div id="app-container">
@@ -84,18 +86,13 @@
                             <select id="db-exercise-type" required><option value="" disabled selected>Choose body part...</option><option value="Upper Body">Upper Body</option><option value="Lower Body">Lower Body</option><option value="Core">Core</option><option value="Full Body">Full Body</option></select>
                             <select id="db-exercise-track-type" required><option value="reps" selected>Track by Reps</option><option value="time">Track by Time</option></select>
                         </div>
-                        <textarea id="db-exercise-description" placeholder="Exercise Description (e.g., how to perform, common mistakes...)"></textarea>
-                        <input type="text" id="db-primary-muscles" placeholder="Primary Muscles (comma-separated)">
-                        <input type="text" id="db-secondary-muscles" placeholder="Secondary Muscles (comma-separated)">
                         <div class="file-input-container">
-                            <label for="db-exercise-image-input" class="btn-secondary">Choose Images</label>
-                            <input type="file" id="db-exercise-image-input" accept="image/*,image/gif" multiple>
+                            <label for="db-exercise-image-input" class="btn-secondary">Choose Image</label>
+                            <input type="file" id="db-exercise-image-input" accept="image/*,image/gif">
+                            <img id="db-exercise-thumbnail" class="hidden" alt="Exercise thumbnail preview">
+                            <button type="button" id="remove-db-image-btn" class="btn-danger hidden">Remove</button>
                         </div>
-                        <div id="db-exercise-thumbnail-container"></div>
-                        <div class="form-actions-split">
-                            <button type="button" id="db-cancel-edit-btn" class="btn-secondary hidden">Cancel</button>
-                            <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button>
-                        </div>
+                        <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Exercise List</button>
                     </form>
                 </div>
                 <div id="db-list-container">
@@ -107,41 +104,7 @@
     </div>
 
     <!-- Modals -->
-    <div id="exercise-detail-modal" class="modal hidden">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <div id="detail-modal-image-container"></div>
-            <h2 id="detail-modal-name" style="margin-bottom: 12px;"></h2>
-            <div class="muscle-tags-container">
-                <div id="detail-modal-primary-muscles"></div>
-                <div id="detail-modal-secondary-muscles"></div>
-            </div>
-            <div class="detail-modal-section">
-                <h3>Description</h3>
-                <p id="detail-modal-description"></p>
-            </div>
-            <div class="detail-modal-section anatomical-map">
-                 <h3>Muscle Map</h3>
-                 <!-- Placeholder for an SVG anatomical map -->
-                 <div style="text-align:center; background: var(--color-background); padding: 20px; border-radius: var(--radius-md); color: var(--color-text-tertiary);">Anatomical Map SVG Placeholder</div>
-            </div>
-            <div class="form-actions" style="margin-top: 24px;">
-                <button type="button" id="close-detail-modal-btn" class="btn-secondary">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="image-viewer-modal" class="modal hidden">
-        <div class="modal-overlay"></div>
-        <div class="modal-content image-modal">
-            <div id="image-viewer-content-wrapper">
-                <div id="image-viewer-content"></div>
-            </div>
-            <button id="image-viewer-prev" class="image-viewer-nav-btn">&lt;</button>
-            <button id="image-viewer-next" class="image-viewer-nav-btn">&gt;</button>
-            <div id="image-viewer-dots"></div>
-        </div>
-    </div>
+    <div id="image-viewer-modal" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content image-modal"><img id="full-size-image" alt="Full size exercise image"></div></div>
     
     <div id="countdown-modal" class="modal hidden">
         <div class="modal-overlay"></div>
@@ -230,15 +193,5 @@
             </form>
         </div>
     </div>
-
-    <!-- SCRIPTS -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script src="js/database.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/modals.js"></script>
-    <script src="js/page_exercises.js"></script>
-    <script src="js/page_routines.js"></script>
-    <script src="js/page_workout.js"></script>
-    <script src="js/app.js"></script>
 </body>
 </html>
