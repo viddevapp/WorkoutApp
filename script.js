@@ -1356,4 +1356,4 @@ async function initializeApp() {
     initRoutineBuilderSortable();
     renderRoutineBuilderList();
 }
-initializeApp();
+initializeApp(); 
