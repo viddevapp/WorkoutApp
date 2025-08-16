@@ -214,33 +214,6 @@ function formatTotalTime(ms) {
     return parts.join(' ');
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    const dateElement = document.getElementById('date');
-    const prevDayButton = document.getElementById('prev-day');
-    const nextDayButton = document.getElementById('next-day');
-
-    let currentDate = new Date();
-
-    function updateDate() {
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        dateElement.textContent = currentDate.toLocaleDateString(undefined, options);
-    }
-
-    function changeDay(offset) {
-        currentDate.setDate(currentDate.getDate() + offset);
-        updateDate();
-    }
-
-    prevDayButton.addEventListener('click', () => changeDay(-1));
-    nextDayButton.addEventListener('click', () => changeDay(1));
-
-    dateElement.addEventListener('click', () => {
-        currentDate = new Date();
-        updateDate();
-    });
-
-    updateDate(); // Initial date update
-});
 
 // --- 3. RENDERING FUNCTIONS ---
 function renderCurrentPage() {
@@ -981,7 +954,8 @@ appContainer.addEventListener('click', e => {
     }
 });
 
-trackerFooter.addEventListener('click', (e) => {
+// THIS IS THE FIX: The listener is now on 'globalTimerControls' instead of 'trackerFooter'
+globalTimerControls.addEventListener('click', (e) => {
     const t = e.target;
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
