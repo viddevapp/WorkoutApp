@@ -76,15 +76,6 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .swipe-delete-btn { background-color: var(--color-danger); }
 
 /* 7. Specific Page Overrides */
-#daily-workout-header {
-    padding-bottom: 16px;
-    text-align: center;
-}
-#daily-workout-date-display {
-    margin: 0;
-    padding: 0;
-    border: none;
-}
 #exercises-page .card h3, #routines-page .card h3 { text-align: center; }
 #exercise-search-input { width: 100%; margin-bottom: 16px; }
 .exercise-item-main { flex-grow: 1; text-align: left; }

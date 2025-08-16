@@ -37,6 +37,8 @@ let allData = {
 const appContainer = document.getElementById('app-container');
 const navWorkout = document.getElementById('nav-workout'), navRoutines = document.getElementById('nav-routines'), navExercises = document.getElementById('nav-exercises'), navCalendar = document.getElementById('nav-calendar');
 const workoutPage = document.getElementById('workout-page'), routinesPage = document.getElementById('routines-page'), exercisesPage = document.getElementById('exercises-page'), calendarPage = document.getElementById('calendar-page');
+const workoutPageMain = document.querySelector('#workout-page main');
+const dailyWorkoutDateDisplay = document.getElementById('daily-workout-date-display');
 const dbExerciseListDiv = document.getElementById('db-exercise-list');
 const createRoutineForm = document.getElementById('create-routine-form'), routineEditingIdInput = document.getElementById('routine-editing-id'), routineNameInput = document.getElementById('routine-name-input'), routineExerciseInput = document.getElementById('routine-exercise-input'), autocompleteResults = document.getElementById('autocomplete-results'), routineSetsInput = document.getElementById('routine-sets-input'), routineRepsInput = document.getElementById('routine-reps-input'), addExerciseToBuilderBtn = document.getElementById('add-exercise-to-builder-btn'), routineBuilderList = document.getElementById('routine-builder-list'), saveRoutineBtn = document.getElementById('save-routine-btn'), savedRoutinesList = document.getElementById('saved-routines-list');
 const cancelEditRoutineBtn = document.getElementById('cancel-edit-routine-btn');
@@ -238,6 +240,29 @@ function renderCurrentPage() {
     }
 }
 
+function renderDateDisplay() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    currentDate.setHours(0, 0, 0, 0);
+
+    if (currentDate.getTime() === today.getTime()) {
+        dailyWorkoutDateDisplay.textContent = 'Today';
+    } else if (currentDate.getTime() === yesterday.getTime()) {
+        dailyWorkoutDateDisplay.textContent = 'Yesterday';
+    } else {
+        dailyWorkoutDateDisplay.textContent = currentDate.toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+        });
+    }
+}
+
 function renderExerciseDatabase(filters = {}, sortBy = 'az', searchQuery = '') {
     dbExerciseListDiv.innerHTML = '';
     let filteredData = [...allData.exerciseDatabase];
@@ -381,6 +406,7 @@ function generateSetCircles(completed, total) {
 }
 
 function renderWorkoutPage() {
+    renderDateDisplay();
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
     resetSwipeState();
@@ -389,7 +415,7 @@ function renderWorkoutPage() {
     if (!workoutData) {
         routineSelectionArea.classList.remove('hidden');
         activeRoutineInfo.classList.add('hidden');
-        activeRoutineDisplay.innerHTML = `<div class="placeholder-card">Select a routine and click "Start" to see your exercises.</div>`;
+        activeRoutineDisplay.innerHTML = `<div class="placeholder-card">No workout logged for this day.</div>`;
         return;
     }
 
@@ -594,6 +620,22 @@ function resetRoutineForm() {
     renderRoutineBuilderList();
     clearRoutineBuilderState();
 }
+
+function changeDay(days) {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() + days);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (newDate > today) {
+        return; // Prevent navigating to future dates
+    }
+
+    currentDate.setDate(currentDate.getDate() + days);
+    closeStopwatchModal(true);
+    renderWorkoutPage();
+}
+
 function exportDataToFile() { try { const dataAsString = JSON.stringify({ ...allData, exerciseDatabase: [] }, null, 2); const blob = new Blob([dataAsString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `workout-tracker-backup-${getFormattedDate(new Date())}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); } catch (error) { console.error("Export failed:", error); alert("Could not export data."); } }
 function importDataFromFile(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function (e) { try { const importedData = JSON.parse(e.target.result); if (!importedData.history || !importedData.userGoals) { throw new Error("Invalid data file format."); } if (confirm("This will overwrite all current data. Are you sure you want to proceed?")) { allData.routines = importedData.routines || []; allData.history = importedData.history; allData.userGoals = importedData.userGoals; currentDate = new Date(); saveDataToLocalStorage(); renderCurrentPage(); alert("Data imported successfully!"); } } catch (error) { alert('Error reading or parsing file. Please make sure you selected a valid backup file.'); console.error(error); } finally { fileLoaderInput.value = ""; } }; reader.readAsText(file); }
 
@@ -1438,8 +1480,61 @@ calendarGrid.addEventListener('click', (e) => {
 
 closeSummaryModalBtn.addEventListener('click', () => closeModal(workoutSummaryModal));
 
+// --- 10. DAY SWIPE LOGIC ---
+let daySwipeState = { startX: 0, startY: 0, isSwiping: false, direction: null };
 
-// --- 10. INITIALIZE APP ---
+workoutPageMain.addEventListener('touchstart', e => {
+    if (e.target.closest('.swipe-item-container')) {
+        daySwipeState.isSwiping = false;
+        return;
+    }
+    daySwipeState.startX = e.touches[0].clientX;
+    daySwipeState.startY = e.touches[0].clientY;
+    daySwipeState.isSwiping = true;
+    daySwipeState.direction = null;
+}, { passive: true });
+
+workoutPageMain.addEventListener('touchmove', e => {
+    if (!daySwipeState.isSwiping) return;
+
+    const diffX = e.touches[0].clientX - daySwipeState.startX;
+    const diffY = e.touches[0].clientY - daySwipeState.startY;
+
+    if (!daySwipeState.direction) {
+        if (Math.abs(diffX) > 10 && Math.abs(diffX) > Math.abs(diffY)) {
+            daySwipeState.direction = 'horizontal';
+        } else if (Math.abs(diffY) > 10) {
+            daySwipeState.direction = 'vertical';
+        }
+    }
+    
+    if (daySwipeState.direction === 'horizontal') {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+workoutPageMain.addEventListener('touchend', e => {
+    if (!daySwipeState.isSwiping || daySwipeState.direction !== 'horizontal') {
+        daySwipeState.isSwiping = false;
+        return;
+    }
+
+    const diffX = e.changedTouches[0].clientX - daySwipeState.startX;
+    const SWIPE_THRESHOLD = 50;
+
+    if (Math.abs(diffX) > SWIPE_THRESHOLD) {
+        if (diffX > 0) {
+            changeDay(-1); // Swipe Right to see Previous Day
+        } else {
+            changeDay(1); // Swipe Left to see Next Day
+        }
+    }
+    
+    daySwipeState.isSwiping = false;
+});
+
+
+// --- 11. INITIALIZE APP ---
 async function initializeApp() {
     loadTheme();
     loadDataFromLocalStorage();

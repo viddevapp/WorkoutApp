@@ -1,5 +1,6 @@
 // --- 1. GLOBAL STATE AND REFERENCES ---
 let currentDate = new Date();
+let calendarDate = new Date(); // New state for the calendar view
 let routineEditingState = { isEditing: false, id: null };
 let routineBuilderState = { exercises: [], selectedExerciseId: null };
 let countdownIntervalId = null;
@@ -34,15 +35,14 @@ let allData = {
 
 // --- REFERENCES TO HTML ELEMENTS ---
 const appContainer = document.getElementById('app-container');
-const navWorkout = document.getElementById('nav-workout'), navRoutines = document.getElementById('nav-routines'), navExercises = document.getElementById('nav-exercises');
-const workoutPage = document.getElementById('workout-page'), routinesPage = document.getElementById('routines-page'), exercisesPage = document.getElementById('exercises-page');
+const navWorkout = document.getElementById('nav-workout'), navRoutines = document.getElementById('nav-routines'), navExercises = document.getElementById('nav-exercises'), navCalendar = document.getElementById('nav-calendar');
+const workoutPage = document.getElementById('workout-page'), routinesPage = document.getElementById('routines-page'), exercisesPage = document.getElementById('exercises-page'), calendarPage = document.getElementById('calendar-page');
 const dbExerciseListDiv = document.getElementById('db-exercise-list');
 const createRoutineForm = document.getElementById('create-routine-form'), routineEditingIdInput = document.getElementById('routine-editing-id'), routineNameInput = document.getElementById('routine-name-input'), routineExerciseInput = document.getElementById('routine-exercise-input'), autocompleteResults = document.getElementById('autocomplete-results'), routineSetsInput = document.getElementById('routine-sets-input'), routineRepsInput = document.getElementById('routine-reps-input'), addExerciseToBuilderBtn = document.getElementById('add-exercise-to-builder-btn'), routineBuilderList = document.getElementById('routine-builder-list'), saveRoutineBtn = document.getElementById('save-routine-btn'), savedRoutinesList = document.getElementById('saved-routines-list');
 const cancelEditRoutineBtn = document.getElementById('cancel-edit-routine-btn');
 const repsBasedInputs = document.getElementById('reps-based-inputs'), timeBasedInputs = document.getElementById('time-based-inputs'), routineTimeSetsInput = document.getElementById('routine-time-sets-input'), routineDurationInput = document.getElementById('routine-duration-input');
 const dailyRoutineSelect = document.getElementById('daily-routine-select'), startRoutineBtn = document.getElementById('start-routine-btn'), activeRoutineDisplay = document.getElementById('active-routine-display'), routineSelectionArea = document.getElementById('routine-selection-area'), activeRoutineInfo = document.getElementById('active-routine-info'), activeRoutineName = document.getElementById('active-routine-name');
 const allModals = document.querySelectorAll('.modal');
-const dateDisplayBtn = document.getElementById('date-display-btn'), prevDayBtn = document.getElementById('prev-day-btn'), nextDayBtn = document.getElementById('next-day-btn');
 const actionsMenuBtn = document.getElementById('actions-menu-btn'), actionsDropdown = document.getElementById('actions-dropdown'), importDataBtn = document.getElementById('import-data-btn'), exportDataBtn = document.getElementById('export-data-btn'), fileLoaderInput = document.getElementById('file-loader');
 const stopwatchModal = document.getElementById('stopwatch-modal'), stopwatchExerciseName = document.getElementById('stopwatch-exercise-name'), stopwatchTimerDisplay = document.getElementById('stopwatch-timer-display'), stopwatchActionBtn = document.getElementById('stopwatch-action-btn'), stopwatchCancelBtn = document.getElementById('stopwatch-cancel-btn');
 const countdownModal = document.getElementById('countdown-modal'), countdownTimerDisplay = document.getElementById('countdown-timer-display'), countdownLabel = document.getElementById('countdown-label'), countdownNextExerciseInfo = document.getElementById('countdown-next-exercise-info'), countdownNextExerciseName = document.getElementById('countdown-next-exercise-name'), countdownNextExerciseDetails = document.getElementById('countdown-next-exercise-details'), countdownProgressCircle = document.querySelector('.timer-progress');
@@ -66,6 +66,8 @@ const changeThemeBtn = document.getElementById('change-theme-btn');
 const themeModal = document.getElementById('theme-modal');
 const themeSelectionGrid = document.getElementById('theme-selection-grid');
 const closeThemeModalBtn = document.getElementById('close-theme-modal-btn');
+const calendarMonthYear = document.getElementById('calendar-month-year'), prevMonthBtn = document.getElementById('prev-month-btn'), nextMonthBtn = document.getElementById('next-month-btn'), calendarGrid = document.getElementById('calendar-grid');
+const workoutSummaryModal = document.getElementById('workout-summary-modal'), summaryModalContent = document.getElementById('summary-modal-content'), closeSummaryModalBtn = document.getElementById('close-summary-modal-btn');
 
 
 const circleCircumference = 2 * Math.PI * 54;
@@ -231,9 +233,10 @@ function renderCurrentPage() {
         renderWorkoutPage();
         initDailyWorkoutSortable();
     }
-    renderDateControls();
+    if (id === 'calendar-page') {
+        renderCalendar(calendarDate);
+    }
 }
-function renderDateControls() { const today = new Date(); today.setHours(0, 0, 0, 0); currentDate.setHours(0, 0, 0, 0); const isToday = currentDate.getTime() === today.getTime(); dateDisplayBtn.textContent = isToday ? 'Today' : currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); nextDayBtn.disabled = currentDate >= today; }
 
 function renderExerciseDatabase(filters = {}, sortBy = 'az', searchQuery = '') {
     dbExerciseListDiv.innerHTML = '';
@@ -591,7 +594,6 @@ function resetRoutineForm() {
     renderRoutineBuilderList();
     clearRoutineBuilderState();
 }
-function changeDate(days) { currentDate.setDate(currentDate.getDate() + days); closeStopwatchModal(true); renderCurrentPage(); }
 function exportDataToFile() { try { const dataAsString = JSON.stringify({ ...allData, exerciseDatabase: [] }, null, 2); const blob = new Blob([dataAsString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `workout-tracker-backup-${getFormattedDate(new Date())}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); } catch (error) { console.error("Export failed:", error); alert("Could not export data."); } }
 function importDataFromFile(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function (e) { try { const importedData = JSON.parse(e.target.result); if (!importedData.history || !importedData.userGoals) { throw new Error("Invalid data file format."); } if (confirm("This will overwrite all current data. Are you sure you want to proceed?")) { allData.routines = importedData.routines || []; allData.history = importedData.history; allData.userGoals = importedData.userGoals; currentDate = new Date(); saveDataToLocalStorage(); renderCurrentPage(); alert("Data imported successfully!"); } } catch (error) { alert('Error reading or parsing file. Please make sure you selected a valid backup file.'); console.error(error); } finally { fileLoaderInput.value = ""; } }; reader.readAsText(file); }
 
@@ -707,6 +709,7 @@ function closeStopwatchModal(force = false) {
 navWorkout.addEventListener('click', () => showPage('workout-page'));
 navRoutines.addEventListener('click', () => showPage('routines-page'));
 navExercises.addEventListener('click', () => showPage('exercises-page'));
+navCalendar.addEventListener('click', () => showPage('calendar-page'));
 
 addExerciseToBuilderBtn.addEventListener('click', handleAddExerciseToBuilder);
 createRoutineForm.addEventListener('submit', handleSaveRoutine);
@@ -954,7 +957,8 @@ appContainer.addEventListener('click', e => {
     }
 });
 
-trackerFooter.addEventListener('click', (e) => {
+
+globalTimerControls.addEventListener('click', (e) => {
     const t = e.target;
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
@@ -1013,9 +1017,6 @@ stopwatchActionBtn.addEventListener('click', () => { if (stopwatchActionBtn.clas
 stopwatchCancelBtn.addEventListener('click', () => closeStopwatchModal());
 closeCompleteModalBtn.addEventListener('click', () => { closeModal(workoutCompleteModal); renderWorkoutPage(); });
 
-prevDayBtn.addEventListener('click', () => changeDate(-1));
-nextDayBtn.addEventListener('click', () => changeDate(1));
-dateDisplayBtn.addEventListener('click', () => { if (dateDisplayBtn.disabled) return; currentDate = new Date(); renderCurrentPage(); });
 document.addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) { allModals.forEach(m => closeModal(m)); closeCountdownModal(); closeStopwatchModal(true); } });
 countdownModal.addEventListener('click', e => { if (e.target.classList.contains('modal-content') || e.target.classList.contains('countdown-timer-wrapper')) closeCountdownModal(); });
 actionsMenuBtn.addEventListener('click', () => actionsDropdown.classList.toggle('hidden'));
@@ -1343,7 +1344,102 @@ themeSelectionGrid.addEventListener('click', (e) => {
     }
 });
 
-// --- 9. INITIALIZE APP ---
+// --- 9. CALENDAR LOGIC ---
+function renderCalendar(date) {
+    calendarGrid.innerHTML = '';
+    const year = date.getFullYear();
+    const month = date.getMonth();
+
+    calendarMonthYear.textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const firstDayOfMonth = new Date(year, month, 1);
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+    const daysInMonth = lastDayOfMonth.getDate();
+    const startDayIndex = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday...
+
+    // Create cells for previous month's days
+    for (let i = 0; i < startDayIndex; i++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day other-month';
+        calendarGrid.appendChild(dayDiv);
+    }
+
+    // Create cells for current month's days
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day';
+        dayDiv.textContent = i;
+        
+        const today = new Date();
+        if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+            dayDiv.classList.add('today');
+        }
+
+        const dateKey = getFormattedDate(new Date(year, month, i));
+        if (allData.history[dateKey] && allData.history[dateKey].isComplete) {
+            dayDiv.classList.add('completed-workout');
+            dayDiv.dataset.date = dateKey;
+            dayDiv.innerHTML += `<span class="completed-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" clip-rule="evenodd" /></svg></span>`;
+        }
+        calendarGrid.appendChild(dayDiv);
+    }
+}
+
+function showWorkoutSummaryModal(dateKey) {
+    const workoutData = allData.history[dateKey];
+    if (!workoutData) return;
+
+    let summaryHTML = `<div class="workout-summary-card"><div class="summary-header"><div><h2>${workoutData.routine.name} - Summary</h2>${workoutData.completionTime ? `<div class="summary-total-time">${formatTotalTime(workoutData.completionTime)}</div>` : ''}</div></div>`;
+
+    workoutData.routine.exercises.forEach(exercise => {
+        const progress = workoutData.progress.find(p => p.instanceId === exercise.instanceId);
+        const stats = exercise.trackType === 'time' ? `${exercise.sets} sets × ${exercise.duration} sec` : `${exercise.sets} sets × ${exercise.reps} reps`;
+        let setsHTML = '';
+
+        if (exercise.trackType === 'reps') {
+            setsHTML += `<div class="summary-sets-list-header"><span class="set-label">Set</span><span class="reps-label">Reps</span><span class="weight-label">Weight</span></div>`;
+            progress.loggedData.forEach((setData, i) => {
+                setsHTML += `<div class="summary-set-item"><span class="set-label">${i + 1}</span><span class="summary-logged-time" style="flex:1;">${setData.reps}</span><span class="summary-logged-time" style="flex:1;">${setData.weight || '--'}</span></div>`;
+            });
+        } else { // Time-based
+            progress.loggedData.forEach((time, index) => {
+                setsHTML += `<div class="summary-set-item"><span class="set-label">Set ${index + 1}</span><span class="summary-logged-time">${formatStopwatchTime(time)}</span></div>`;
+            });
+        }
+
+        summaryHTML += `<div class="summary-exercise-card"><div class="summary-exercise-header"><div class="exercise-item-main"><span class="exercise-item-name">${exercise.name}</span><small class="exercise-item-stats">${stats}</small></div></div><div class="summary-sets-list">${setsHTML}</div></div>`;
+    });
+    
+    if (workoutData.notes) {
+        summaryHTML += `<div class="summary-notes-section"><h3>Workout Notes</h3><p>${workoutData.notes}</p></div>`;
+    }
+    summaryHTML += `</div>`;
+    
+    summaryModalContent.innerHTML = summaryHTML;
+    openModal(workoutSummaryModal);
+}
+
+prevMonthBtn.addEventListener('click', () => {
+    calendarDate.setMonth(calendarDate.getMonth() - 1);
+    renderCalendar(calendarDate);
+});
+
+nextMonthBtn.addEventListener('click', () => {
+    calendarDate.setMonth(calendarDate.getMonth() + 1);
+    renderCalendar(calendarDate);
+});
+
+calendarGrid.addEventListener('click', (e) => {
+    const dayCell = e.target.closest('.completed-workout');
+    if (dayCell && dayCell.dataset.date) {
+        showWorkoutSummaryModal(dayCell.dataset.date);
+    }
+});
+
+closeSummaryModalBtn.addEventListener('click', () => closeModal(workoutSummaryModal));
+
+
+// --- 10. INITIALIZE APP ---
 async function initializeApp() {
     loadTheme();
     loadDataFromLocalStorage();
