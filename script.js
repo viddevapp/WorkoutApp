@@ -10,7 +10,7 @@ let routineBuilderSortable = null, dailyWorkoutSortable = null, savedRoutinesSor
 let swipeState = { openCardContent: null, instanceIdToSwap: null, instanceIdToEdit: null };
 let exerciseToAdd = { id: null };
 let activeRoutineDetails = { id: null };
-let detailsModalExerciseId = null; // [NEW] To track which exercise is in the details modal
+let detailsModalExerciseId = null; // To track which exercise is in the details modal
 
 let allData = {
     exerciseDatabase: [],
@@ -139,6 +139,18 @@ async function loadExercisesFromCSV() {
 function openModal(modalElement) { modalElement.classList.remove('hidden'); }
 function closeModal(modalElement) { modalElement.classList.add('hidden'); if (modalElement.id === 'exercise-details-modal') { detailsVideoContainer.innerHTML = ''; detailsModalExerciseId = null; } }
 function getFormattedDate(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
+
+// [NEW] Robust function to get YouTube video ID from various URL formats
+function getYoutubeVideoId(url) {
+    if (!url) return null;
+    let videoId = null;
+    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(regex);
+    if (match) {
+        videoId = match[1];
+    }
+    return videoId;
+}
 
 function startCountdown(duration, nextExercise = null) {
     clearInterval(countdownIntervalId);
@@ -916,12 +928,12 @@ function openDetailsModal(exerciseId) {
     const exercise = allData.exerciseDatabase.find(ex => ex.id === exerciseId);
     if (!exercise) return;
 
-    detailsModalExerciseId = exerciseId; // Store the ID for the "Add to Routine" button
+    detailsModalExerciseId = exerciseId;
     detailsExerciseName.textContent = exercise.name;
-
-    if (exercise.videoUrl) {
-        const videoId = new URL(exercise.videoUrl).searchParams.get('v');
-        detailsVideoContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+    
+    const videoId = getYoutubeVideoId(exercise.videoUrl);
+    if (videoId) {
+        detailsVideoContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
     } else {
         detailsVideoContainer.innerHTML = '<div class="placeholder-card" style="margin:0; border-radius:0;">No video available.</div>';
     }
