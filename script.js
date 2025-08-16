@@ -497,6 +497,17 @@ function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesS
 function initRoutineDetailsSortable(routineId) { if (routineDetailsSortable) routineDetailsSortable.destroy(); routineDetailsSortable = new Sortable(routineDetailsList, { ...sortableOptions, handle: '.routine-details-item-main', onEnd: (evt) => { const routine = allData.routines.find(r => r.id === routineId); if (routine) { const movedItem = routine.exercises.splice(evt.oldIndex, 1)[0]; routine.exercises.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } } }); }
 
 // --- 5. EVENT HANDLER & WORKFLOW FUNCTIONS ---
+function populateExerciseDropdown(selectElement) {
+    const sortedExercises = [...allData.exerciseDatabase].sort((a, b) => a.name.localeCompare(b.name));
+    selectElement.innerHTML = '<option value="" disabled selected>Choose replacement...</option>';
+    sortedExercises.forEach(ex => {
+        const option = document.createElement('option');
+        option.value = ex.id;
+        option.textContent = ex.name;
+        selectElement.appendChild(option);
+    });
+}
+
 function handleAddExerciseToBuilder() {
     const id = routineBuilderState.selectedExerciseId;
     if (id === null) { alert("Please select an exercise from the list."); return; }
@@ -1252,7 +1263,7 @@ themeSelectionGrid.addEventListener('click', (e) => {
     if (swatch) {
         const themeId = swatch.dataset.themeId;
         setTheme(themeId);
-        renderThemeModal(); // Re-render to show the new active state
+        renderThemeModal();
     }
 });
 
@@ -1269,4 +1280,3 @@ async function initializeApp() {
     renderRoutineBuilderList();
 }
 initializeApp();
-
