@@ -93,12 +93,10 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .active-routine-exercise.current .swipe-item-container { border-color: var(--color-primary); }
 .active-routine-exercise.finished { opacity: 0.6; }
 .exercise-content { flex-grow: 1; display: flex; flex-direction: column; }
-
-/* [MODIFIED] Active Workout Header */
 .exercise-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start; /* MODIFIED: Aligns items to the top */
     gap: 12px;
     margin-bottom: 16px;
 }
@@ -131,18 +129,19 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
     display: flex;
     gap: 6px;
     flex-shrink: 0;
+    padding-top: 2px; /* Small adjustment for vertical alignment */
 }
 .set-circle {
-    width: 12px;
-    height: 12px;
+    width: 14px; /* MODIFIED: Increased size */
+    height: 14px; /* MODIFIED: Increased size */
     border-radius: 50%;
-    border: 2px solid var(--color-border-focus);
+    border: 2px solid var(--color-primary);
     background-color: transparent;
     transition: var(--transition-fast);
 }
 .set-circle.completed {
-    background-color: var(--color-accent);
-    border-color: var(--color-accent);
+    background-color: var(--color-primary-hover); /* MODIFIED: Changed color */
+    border-color: var(--color-primary-hover); /* MODIFIED: Changed color */
 }
 .exercise-actions { margin-top: auto; }
 #active-routine-display .workout-summary-card { max-width: 600px; margin-left: auto; margin-right: auto; }
