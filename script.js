@@ -63,8 +63,8 @@ const modalTimeBasedInputs = document.getElementById('modal-time-based-inputs');
 const addToRoutineTimeSetsInput = document.getElementById('add-to-routine-time-sets');
 const addToRoutineDurationInput = document.getElementById('add-to-routine-duration');
 const trackerFooter = document.getElementById('tracker-footer');
+const globalTimerControls = document.getElementById('global-timer-controls');
 const globalTimerToggle = document.getElementById('global-timer-toggle');
-const autoStartTimerToggle = document.getElementById('auto-start-timer-toggle');
 const changeThemeBtn = document.getElementById('change-theme-btn');
 const themeModal = document.getElementById('theme-modal');
 const themeSelectionGrid = document.getElementById('theme-selection-grid');
@@ -378,14 +378,13 @@ function renderSavedRoutines() {
 function renderGlobalTimerControls() {
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
-    const timerControlsGrid = document.getElementById('timer-controls-grid');
+    const globalTimerControls = document.getElementById('global-timer-controls');
 
     if (workoutData && !workoutData.isComplete) {
-        timerControlsGrid.classList.remove('hidden');
+        globalTimerControls.classList.remove('hidden');
         const timerSettings = workoutData.timerSettings;
         
         globalTimerToggle.checked = timerSettings.enabled;
-        autoStartTimerToggle.checked = timerSettings.autoStartNextExercise;
 
         document.querySelectorAll('.global-timer-interval-btn').forEach(btn => {
             btn.disabled = !timerSettings.enabled;
@@ -396,7 +395,7 @@ function renderGlobalTimerControls() {
             }
         });
     } else {
-        timerControlsGrid.classList.add('hidden');
+        globalTimerControls.classList.add('hidden');
     }
 }
 
@@ -416,7 +415,7 @@ function renderWorkoutPage() {
     renderGlobalTimerControls();
 
     if (!workoutData) {
-        routineSelectionArea.classList.remove('hidden');
+        routineSelectionArea.classList.toggle('hidden', currentDate < new Date().setHours(0,0,0,0));
         activeRoutineInfo.classList.add('hidden');
         activeRoutineDisplay.innerHTML = `<div class="placeholder-card">No workout logged for this day.</div>`;
         return;
@@ -425,7 +424,7 @@ function renderWorkoutPage() {
     if (workoutData.isComplete) {
         routineSelectionArea.classList.add('hidden');
         activeRoutineInfo.classList.add('hidden');
-        let summaryHTML = `<div class="card workout-summary-card"><div class="summary-header"><div><h2>${workoutData.routine.name} - Summary</h2>${workoutData.completionTime ? `<div class="summary-total-time">${formatTotalTime(workoutData.completionTime)}</div>` : ''}</div><button class="btn-danger" id="delete-workout-btn">Delete Workout</button></div>`;
+        let summaryHTML = `<div class="card workout-summary-card"><div class="summary-header"><div><h2>${workoutData.routine.name} - Summary</h2>${workoutData.completionTime ? `<div class="summary-total-time">${formatTotalTime(workoutData.completionTime)}</div>` : ''}</div></div>`;
 
         workoutData.routine.exercises.forEach(exercise => {
             const progress = workoutData.progress.find(p => p.instanceId === exercise.instanceId);
@@ -467,7 +466,7 @@ function renderWorkoutPage() {
         });
         
         summaryHTML += `<div class="summary-notes-section"><h3>Workout Notes</h3><textarea id="workout-notes-input" placeholder="How was the workout? Any PRs?">${workoutData.notes || ''}</textarea></div>`;
-        summaryHTML += `<div class="summary-actions"><button class="btn-primary" id="save-summary-changes-btn">Save Changes</button></div></div>`;
+        summaryHTML += `<div class="summary-actions"><button class="btn-primary" id="save-summary-changes-btn">Save Changes</button><button class="btn-secondary" id="delete-workout-btn">Delete Workout</button></div></div>`;
         activeRoutineDisplay.innerHTML = summaryHTML;
         return;
     }
@@ -681,9 +680,6 @@ function handleSetCompletion(instanceId) {
     if (isExerciseComplete) {
         if (isLastExerciseInRoutine) {
             setTimeout(() => completeWorkout(true), 250);
-        } else if (workoutData.timerSettings.autoStartNextExercise) {
-            const nextExercise = workoutData.routine.exercises[currentIndex + 1];
-            startCountdown(workoutData.timerSettings.duration, nextExercise);
         }
     } else {
         if (workoutData.timerSettings.enabled) {
@@ -788,7 +784,7 @@ startRoutineBtn.addEventListener('click', () => {
             startTime: Date.now(), 
             completionTime: null, 
             notes: '',
-            timerSettings: { enabled: true, duration: 30, autoStartNextExercise: true }
+            timerSettings: { enabled: true, duration: 30 }
         };
         saveDataToLocalStorage();
         renderWorkoutPage();
@@ -1024,9 +1020,6 @@ trackerFooter.addEventListener('click', (e) => {
         workoutData.timerSettings.duration = parseInt(t.dataset.time);
         saveDataToLocalStorage();
         renderGlobalTimerControls();
-    } else if (t.id === 'auto-start-timer-toggle') {
-        workoutData.timerSettings.autoStartNextExercise = t.checked;
-        saveDataToLocalStorage();
     }
 });
 

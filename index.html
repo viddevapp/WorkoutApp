@@ -51,25 +51,18 @@
                 <div id="active-routine-display" class="scrollable-content"><div class="placeholder-card">Select a routine and click "Start" to see your exercises.</div></div>
             </main>
             <div id="tracker-footer">
-                <div id="timer-controls-grid">
-                    <div class="timer-control-row">
-                        <label for="global-timer-toggle">Break Timer</label>
-                        <div class="timer-intervals">
-                            <button class="timer-interval-btn global-timer-interval-btn" data-time="15">15s</button>
-                            <button class="timer-interval-btn global-timer-interval-btn" data-time="30">30s</button>
-                            <button class="timer-interval-btn global-timer-interval-btn" data-time="45">45s</button>
-                        </div>
+                <div id="global-timer-controls" class="hidden">
+                    <div class="timer-toggle-area">
+                        <label for="global-timer-toggle">Global Break Timer</label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="global-timer-toggle">
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
-                    <div class="timer-control-row">
-                        <label for="auto-start-timer-toggle">Auto-Start Next</label>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="auto-start-timer-toggle">
-                            <span class="toggle-slider"></span>
-                        </label>
+                    <div class="timer-intervals">
+                        <button class="timer-interval-btn global-timer-interval-btn" data-time="15">15s</button>
+                        <button class="timer-interval-btn global-timer-interval-btn" data-time="30">30s</button>
+                        <button class="timer-interval-btn global-timer-interval-btn" data-time="45">45s</button>
                     </div>
                 </div>
             </div>
