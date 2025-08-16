@@ -45,6 +45,7 @@ const countdownModal = document.getElementById('countdown-modal'), countdownTime
 const workoutCompleteModal = document.getElementById('workout-complete-modal'), workoutTotalTimeDisplay = document.getElementById('workout-total-time'), closeCompleteModalBtn = document.getElementById('close-complete-modal-btn');
 const swapExerciseModal = document.getElementById('swap-exercise-modal'), swapExerciseForm = document.getElementById('swap-exercise-form'), swapExerciseSelect = document.getElementById('swap-exercise-select'), cancelSwapBtn = document.getElementById('cancel-swap-btn');
 const editWorkoutExerciseModal = document.getElementById('edit-workout-exercise-modal'), editWorkoutExerciseForm = document.getElementById('edit-workout-exercise-form'), editModalTitle = document.getElementById('edit-modal-title'), editRepsBasedInputs = document.getElementById('edit-reps-based-inputs'), editTimeBasedInputs = document.getElementById('edit-time-based-inputs'), editSetsInput = document.getElementById('edit-sets-input'), editRepsInput = document.getElementById('edit-reps-input'), editTimeSetsInput = document.getElementById('edit-time-sets-input'), editDurationInput = document.getElementById('edit-duration-input'), cancelEditBtn = document.getElementById('cancel-edit-btn');
+const editModalTrackTypeToggle = document.getElementById('edit-modal-track-type-toggle');
 const filterCategorySelect = document.getElementById('filter-category'), filterMuscleSelect = document.getElementById('filter-muscle'), filterTypeSelect = document.getElementById('filter-type'), sortExercisesSelect = document.getElementById('sort-exercises');
 const exerciseDetailsModal = document.getElementById('exercise-details-modal'), detailsVideoContainer = document.getElementById('details-video-container'), detailsExerciseName = document.getElementById('details-exercise-name'), detailsTabContent = document.getElementById('details-tab-content'), detailsModalCloseBtn = document.getElementById('details-modal-close-btn');
 const addToRoutineModal = document.getElementById('add-to-routine-modal'), addToRoutineForm = document.getElementById('add-to-routine-form'), addToRoutineTitle = document.getElementById('add-to-routine-title'), addToRoutineSelect = document.getElementById('add-to-routine-select'), addToRoutineSetsInput = document.getElementById('add-to-routine-sets'), addToRoutineRepsInput = document.getElementById('add-to-routine-reps'), cancelAddToRoutineBtn = document.getElementById('cancel-add-to-routine-btn');
@@ -497,6 +498,7 @@ function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesS
 function initRoutineDetailsSortable(routineId) { if (routineDetailsSortable) routineDetailsSortable.destroy(); routineDetailsSortable = new Sortable(routineDetailsList, { ...sortableOptions, handle: '.routine-details-item-main', onEnd: (evt) => { const routine = allData.routines.find(r => r.id === routineId); if (routine) { const movedItem = routine.exercises.splice(evt.oldIndex, 1)[0]; routine.exercises.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } } }); }
 
 // --- 5. EVENT HANDLER & WORKFLOW FUNCTIONS ---
+// --- [RESTORED] Helper function for the swap modal ---
 function populateExerciseDropdown(selectElement) {
     const sortedExercises = [...allData.exerciseDatabase].sort((a, b) => a.name.localeCompare(b.name));
     selectElement.innerHTML = '<option value="" disabled selected>Choose replacement...</option>';
@@ -893,12 +895,19 @@ appContainer.addEventListener('click', e => {
             const exercise = allData.history[getFormattedDate(currentDate)].routine.exercises.find(ex => ex.instanceId === instanceId);
             if (exercise) {
                 editModalTitle.textContent = `Edit ${exercise.name}`;
+                editModalTrackTypeToggle.querySelector('.active')?.classList.remove('active');
                 if (exercise.trackType === 'time') {
-                    editTimeBasedInputs.classList.remove('hidden'); editRepsBasedInputs.classList.add('hidden');
-                    editTimeSetsInput.value = exercise.sets; editDurationInput.value = exercise.duration;
-                } else {
-                    editRepsBasedInputs.classList.remove('hidden'); editTimeBasedInputs.classList.add('hidden');
-                    editSetsInput.value = exercise.sets; editRepsInput.value = exercise.reps;
+                    editModalTrackTypeToggle.querySelector('[data-track-type="time"]').classList.add('active');
+                    editTimeBasedInputs.classList.remove('hidden');
+                    editRepsBasedInputs.classList.add('hidden');
+                    editTimeSetsInput.value = exercise.sets;
+                    editDurationInput.value = exercise.duration;
+                } else { 
+                    editModalTrackTypeToggle.querySelector('[data-track-type="reps"]').classList.add('active');
+                    editRepsBasedInputs.classList.remove('hidden');
+                    editTimeBasedInputs.classList.add('hidden');
+                    editSetsInput.value = exercise.sets;
+                    editRepsInput.value = exercise.reps;
                 }
                 openModal(editWorkoutExerciseModal);
             }
@@ -946,7 +955,36 @@ trackerFooter.addEventListener('click', (e) => {
 swapExerciseForm.addEventListener('submit', e => { e.preventDefault(); const newExerciseId = parseInt(swapExerciseSelect.value); if (isNaN(newExerciseId) || !swipeState.instanceIdToSwap) return; const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; const exerciseIndex = workoutData.routine.exercises.findIndex(ex => ex.instanceId === swipeState.instanceIdToSwap); const progressIndex = workoutData.progress.findIndex(p => p.instanceId === swipeState.instanceIdToSwap); if (exerciseIndex === -1) return; const originalExercise = workoutData.routine.exercises[exerciseIndex]; const newExerciseDbEntry = allData.exerciseDatabase.find(dbEx => dbEx.id === newExerciseId); const newWorkoutExercise = { ...newExerciseDbEntry, sets: originalExercise.sets, reps: newExerciseDbEntry.trackType === 'reps' ? (originalExercise.reps || '8-12') : undefined, duration: newExerciseDbEntry.trackType === 'time' ? (originalExercise.duration || 60) : undefined, trackType: newExerciseDbEntry.trackType, instanceId: Date.now() + Math.random(), exerciseId: newExerciseId }; workoutData.routine.exercises.splice(exerciseIndex, 1, newWorkoutExercise); if (progressIndex > -1) { workoutData.progress[progressIndex].instanceId = newWorkoutExercise.instanceId; } saveDataToLocalStorage(); renderWorkoutPage(); closeModal(swapExerciseModal); swipeState.instanceIdToSwap = null; });
 cancelSwapBtn.addEventListener('click', () => closeModal(swapExerciseModal));
 
-editWorkoutExerciseForm.addEventListener('submit', e => { e.preventDefault(); const instanceId = swipeState.instanceIdToEdit; if (!instanceId) return; const workoutData = allData.history[getFormattedDate(currentDate)]; const exercise = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId); if (exercise) { if (exercise.trackType === 'time') { const newSets = parseInt(editTimeSetsInput.value); const newDuration = parseInt(editDurationInput.value); if (newSets > 0) exercise.sets = newSets; if (newDuration > 0) exercise.duration = newDuration; } else { const newSets = parseInt(editSetsInput.value); const newReps = editRepsInput.value.trim(); if (newSets > 0) exercise.sets = newSets; if (newReps) exercise.reps = newReps; } saveDataToLocalStorage(); renderWorkoutPage(); closeModal(editWorkoutExerciseModal); swipeState.instanceIdToEdit = null; } });
+editWorkoutExerciseForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const instanceId = swipeState.instanceIdToEdit;
+    if (!instanceId) return;
+    const workoutData = allData.history[getFormattedDate(currentDate)];
+    const exercise = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId);
+    
+    if (exercise) {
+        const newTrackType = editModalTrackTypeToggle.querySelector('.active').dataset.trackType;
+        exercise.trackType = newTrackType;
+
+        if (newTrackType === 'time') {
+            const newSets = parseInt(editTimeSetsInput.value);
+            const newDuration = parseInt(editDurationInput.value);
+            if (newSets > 0) exercise.sets = newSets;
+            if (newDuration > 0) exercise.duration = newDuration;
+            exercise.reps = undefined; 
+        } else {
+            const newSets = parseInt(editSetsInput.value);
+            const newReps = editRepsInput.value.trim();
+            if (newSets > 0) exercise.sets = newSets;
+            if (newReps) exercise.reps = newReps;
+            exercise.duration = undefined; 
+        }
+        saveDataToLocalStorage();
+        renderWorkoutPage();
+        closeModal(editWorkoutExerciseModal);
+        swipeState.instanceIdToEdit = null;
+    }
+});
 cancelEditBtn.addEventListener('click', () => closeModal(editWorkoutExerciseModal));
 
 
@@ -1069,6 +1107,21 @@ modalTrackTypeToggle.addEventListener('click', e => {
         } else {
             modalRepsBasedInputs.classList.add('hidden');
             modalTimeBasedInputs.classList.remove('hidden');
+        }
+    }
+});
+
+editModalTrackTypeToggle.addEventListener('click', e => {
+    if (e.target.matches('.track-type-btn')) {
+        const type = e.target.dataset.trackType;
+        editModalTrackTypeToggle.querySelector('.active').classList.remove('active');
+        e.target.classList.add('active');
+        if (type === 'reps') {
+            editRepsBasedInputs.classList.remove('hidden');
+            editTimeBasedInputs.classList.add('hidden');
+        } else {
+            editRepsBasedInputs.classList.add('hidden');
+            editTimeBasedInputs.classList.remove('hidden');
         }
     }
 });
