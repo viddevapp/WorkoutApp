@@ -38,6 +38,12 @@ const filterCategorySelect = document.getElementById('filter-category'), filterM
 const exerciseDetailsModal = document.getElementById('exercise-details-modal'), detailsVideoContainer = document.getElementById('details-video-container'), detailsExerciseName = document.getElementById('details-exercise-name'), detailsTabContent = document.getElementById('details-tab-content'), detailsModalCloseBtn = document.getElementById('details-modal-close-btn');
 const addToRoutineModal = document.getElementById('add-to-routine-modal'), addToRoutineForm = document.getElementById('add-to-routine-form'), addToRoutineTitle = document.getElementById('add-to-routine-title'), addToRoutineSelect = document.getElementById('add-to-routine-select'), addToRoutineSetsInput = document.getElementById('add-to-routine-sets'), addToRoutineRepsInput = document.getElementById('add-to-routine-reps'), cancelAddToRoutineBtn = document.getElementById('cancel-add-to-routine-btn');
 const routineDetailsModal = document.getElementById('routine-details-modal'), routineDetailsTitle = document.getElementById('routine-details-title'), routineDetailsList = document.getElementById('routine-details-list'), closeRoutineDetailsBtn = document.getElementById('close-routine-details-btn');
+// [NEW] References for the "Add to Routine" modal's new inputs
+const modalTrackTypeToggle = document.getElementById('modal-track-type-toggle');
+const modalRepsBasedInputs = document.getElementById('modal-reps-based-inputs');
+const modalTimeBasedInputs = document.getElementById('modal-time-based-inputs');
+const addToRoutineTimeSetsInput = document.getElementById('add-to-routine-time-sets');
+const addToRoutineDurationInput = document.getElementById('add-to-routine-duration');
 
 const circleCircumference = 2 * Math.PI * 54;
 const SWIPE_ACTION_WIDTH = 160; // 2 buttons
@@ -59,6 +65,40 @@ function loadDataFromLocalStorage() {
         } catch (e) { console.error("Could not parse data", e); }
     }
 }
+function saveRoutineBuilderState() {
+    const stateToSave = {
+        builder: routineBuilderState,
+        editing: routineEditingState,
+        name: routineNameInput.value
+    };
+    localStorage.setItem('workoutBuilderProgress', JSON.stringify(stateToSave));
+}
+
+function loadRoutineBuilderState() {
+    const savedProgress = localStorage.getItem('workoutBuilderProgress');
+    if (savedProgress) {
+        try {
+            const { builder, editing, name } = JSON.parse(savedProgress);
+            if (builder && Array.isArray(builder.exercises) && editing) {
+                routineBuilderState = builder;
+                routineEditingState = editing;
+                routineNameInput.value = name || '';
+                if (editing.isEditing) {
+                    saveRoutineBtn.textContent = 'Update Routine';
+                    routineEditingIdInput.value = editing.id;
+                }
+            }
+        } catch (e) {
+            console.error("Could not parse routine builder progress", e);
+            localStorage.removeItem('workoutBuilderProgress');
+        }
+    }
+}
+
+function clearRoutineBuilderState() {
+    localStorage.removeItem('workoutBuilderProgress');
+}
+
 async function loadExercisesFromCSV() {
     try {
         const response = await fetch('Data.csv');
@@ -81,7 +121,7 @@ async function loadExercisesFromCSV() {
         });
 
         allData.exerciseDatabase = data.map((row, index) => ({
-            id: Date.now() + index,
+            id: index,
             name: row['Exercise'],
             videoUrl: row['Video URL'],
             type: row['Type'],
@@ -407,7 +447,7 @@ const sortableOptions = {
     delayOnTouchOnly: true
 };
 
-function initRoutineBuilderSortable() { if (routineBuilderSortable) routineBuilderSortable.destroy(); routineBuilderSortable = new Sortable(routineBuilderList, { ...sortableOptions, handle:'.routine-builder-item', onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); } }); }
+function initRoutineBuilderSortable() { if (routineBuilderSortable) routineBuilderSortable.destroy(); routineBuilderSortable = new Sortable(routineBuilderList, { ...sortableOptions, handle:'.routine-builder-item', onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); saveRoutineBuilderState(); } }); }
 function initDailyWorkoutSortable() { if (dailyWorkoutSortable) dailyWorkoutSortable.destroy(); const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; if (!workoutData) return; dailyWorkoutSortable = new Sortable(activeRoutineDisplay, { ...sortableOptions, handle: '.swipe-content', onEnd: (evt) => { const movedItem = workoutData.routine.exercises.splice(evt.oldIndex, 1)[0]; workoutData.routine.exercises.splice(evt.newIndex, 0, movedItem); const movedProgress = workoutData.progress.splice(evt.oldIndex, 1)[0]; workoutData.progress.splice(evt.newIndex, 0, movedProgress); saveDataToLocalStorage(); renderWorkoutPage(); } }); }
 function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesSortable.destroy(); savedRoutinesSortable = new Sortable(savedRoutinesList, { ...sortableOptions, handle: '.swipe-content', onEnd: (evt) => { const movedItem = allData.routines.splice(evt.oldIndex, 1)[0]; allData.routines.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } }); }
 function initRoutineDetailsSortable(routineId) { if (routineDetailsSortable) routineDetailsSortable.destroy(); routineDetailsSortable = new Sortable(routineDetailsList, { ...sortableOptions, handle: '.routine-details-item-main', onEnd: (evt) => { const routine = allData.routines.find(r => r.id === routineId); if (routine) { const movedItem = routine.exercises.splice(evt.oldIndex, 1)[0]; routine.exercises.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } } }); }
@@ -437,6 +477,7 @@ function handleAddExerciseToBuilder() {
     routineBuilderState.selectedExerciseId = null;
     routineExerciseInput.value = '';
     renderRoutineBuilderList();
+    saveRoutineBuilderState();
 }
 function renderRoutineBuilderList() {
     routineBuilderList.innerHTML = '';
@@ -462,7 +503,15 @@ function renderRoutineBuilderList() {
 }
 function validateRoutineForm() { const name = routineNameInput.value.trim(); const hasExercises = routineBuilderState.exercises.length > 0; saveRoutineBtn.disabled = !(name && hasExercises); }
 function handleSaveRoutine(event) { event.preventDefault(); const name = routineNameInput.value.trim(); const exercisesToSave = routineBuilderState.exercises.map(ex => { const { exerciseId, sets, reps, duration, trackType } = ex; return trackType === 'time' ? { exerciseId, sets, duration, trackType } : { exerciseId, sets, reps, trackType }; }); if (routineEditingState.isEditing) { const r = allData.routines.find(r => r.id === routineEditingState.id); if (r) { r.name = name; r.exercises = exercisesToSave; } } else { const newRoutine = { id: Date.now(), name, exercises: exercisesToSave }; allData.routines.push(newRoutine); } saveDataToLocalStorage(); renderSavedRoutines(); resetRoutineForm(); }
-function resetRoutineForm() { createRoutineForm.reset(); routineBuilderState = { exercises: [], selectedExerciseId: null }; routineEditingState = { isEditing: false, id: null }; routineEditingIdInput.value = ''; saveRoutineBtn.textContent = 'Save Routine'; renderRoutineBuilderList(); }
+function resetRoutineForm() {
+    createRoutineForm.reset();
+    routineBuilderState = { exercises: [], selectedExerciseId: null };
+    routineEditingState = { isEditing: false, id: null };
+    routineEditingIdInput.value = '';
+    saveRoutineBtn.textContent = 'Save Routine';
+    renderRoutineBuilderList();
+    clearRoutineBuilderState();
+}
 function changeDate(days) { currentDate.setDate(currentDate.getDate() + days); closeStopwatchModal(true); renderCurrentPage(); }
 function exportDataToFile() { try { const dataAsString = JSON.stringify({ ...allData, exerciseDatabase: [] }, null, 2); const blob = new Blob([dataAsString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `workout-tracker-backup-${getFormattedDate(new Date())}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); } catch (error) { console.error("Export failed:", error); alert("Could not export data."); } }
 function importDataFromFile(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function (e) { try { const importedData = JSON.parse(e.target.result); if (!importedData.history || !importedData.userGoals) { throw new Error("Invalid data file format."); } if (confirm("This will overwrite all current data. Are you sure you want to proceed?")) { allData.routines = importedData.routines || []; allData.history = importedData.history; allData.userGoals = importedData.userGoals; currentDate = new Date(); saveDataToLocalStorage(); renderCurrentPage(); alert("Data imported successfully!"); } } catch (error) { alert('Error reading or parsing file. Please make sure you selected a valid backup file.'); console.error(error); } finally { fileLoaderInput.value = ""; } }; reader.readAsText(file); }
@@ -581,8 +630,18 @@ navExercises.addEventListener('click', () => showPage('exercises-page'));
 
 addExerciseToBuilderBtn.addEventListener('click', handleAddExerciseToBuilder);
 createRoutineForm.addEventListener('submit', handleSaveRoutine);
-routineNameInput.addEventListener('input', validateRoutineForm);
-routineBuilderList.addEventListener('click', e => { if (e.target.matches('.delete-btn')) { const instanceId = parseFloat(e.target.dataset.instanceId); routineBuilderState.exercises = routineBuilderState.exercises.filter(ex => ex.instanceId !== instanceId); renderRoutineBuilderList(); } });
+routineNameInput.addEventListener('input', () => {
+    validateRoutineForm();
+    saveRoutineBuilderState();
+});
+routineBuilderList.addEventListener('click', e => {
+    if (e.target.matches('.delete-btn')) {
+        const instanceId = parseFloat(e.target.dataset.instanceId);
+        routineBuilderState.exercises = routineBuilderState.exercises.filter(ex => ex.instanceId !== instanceId);
+        renderRoutineBuilderList();
+        saveRoutineBuilderState();
+    }
+});
 
 dailyRoutineSelect.addEventListener('change', () => { startRoutineBtn.disabled = !dailyRoutineSelect.value; });
 startRoutineBtn.addEventListener('click', () => {
@@ -702,6 +761,7 @@ appContainer.addEventListener('click', e => {
                 renderRoutineBuilderList();
                 saveRoutineBtn.textContent = 'Update Routine';
                 routinesPage.querySelector('main').scrollTo({ top: 0, behavior: 'smooth' });
+                saveRoutineBuilderState();
             }
             resetSwipeState();
         } else if (routineCard && !t.closest('.swipe-actions')) {
@@ -821,7 +881,7 @@ exportDataBtn.addEventListener('click', () => { exportDataToFile(); actionsDropd
 importDataBtn.addEventListener('click', () => { fileLoaderInput.click(); actionsDropdown.classList.add('hidden'); });
 fileLoaderInput.addEventListener('change', importDataFromFile);
 
-// --- NEW --- FILTERING AND DETAILS MODAL ---
+// --- FILTERING AND DETAILS MODAL ---
 function populateFilterControls() {
     const categories = [...new Set(allData.exerciseDatabase.map(ex => ex.category))].sort();
     const muscles = [...new Set(allData.exerciseDatabase.map(ex => ex.primaryMuscles))].sort();
@@ -890,6 +950,14 @@ function openAddToRoutineModal(id) {
     allData.routines.forEach(r => {
         addToRoutineSelect.innerHTML += `<option value="${r.id}">${r.name}</option>`;
     });
+    
+    // [NEW] Reset the modal to the default "Reps" view each time it's opened
+    modalRepsBasedInputs.classList.remove('hidden');
+    modalTimeBasedInputs.classList.add('hidden');
+    const activeButton = modalTrackTypeToggle.querySelector('.track-type-btn[data-track-type="reps"]');
+    modalTrackTypeToggle.querySelector('.active').classList.remove('active');
+    activeButton.classList.add('active');
+    
     openModal(addToRoutineModal);
 }
 
@@ -908,32 +976,61 @@ exerciseDetailsModal.addEventListener('click', e => {
     }
 });
 
+// [MODIFIED] Logic for the "Add to Routine" modal form
+modalTrackTypeToggle.addEventListener('click', e => {
+    if (e.target.matches('.track-type-btn')) {
+        const type = e.target.dataset.trackType;
+        modalTrackTypeToggle.querySelector('.active').classList.remove('active');
+        e.target.classList.add('active');
+        if (type === 'reps') {
+            modalRepsBasedInputs.classList.remove('hidden');
+            modalTimeBasedInputs.classList.add('hidden');
+        } else {
+            modalRepsBasedInputs.classList.add('hidden');
+            modalTimeBasedInputs.classList.remove('hidden');
+        }
+    }
+});
+
 addToRoutineForm.addEventListener('submit', e => {
     e.preventDefault();
     const routineId = parseInt(addToRoutineSelect.value);
-    const sets = parseInt(addToRoutineSetsInput.value);
-    const reps = addToRoutineRepsInput.value.trim();
-
-    if (isNaN(routineId) || isNaN(sets) || !reps) {
-        alert("Please fill out all fields.");
+    if (isNaN(routineId)) {
+        alert("Please choose a routine.");
         return;
     }
 
     const routine = allData.routines.find(r => r.id === routineId);
-    if (routine) {
-        routine.exercises.push({
-            exerciseId: exerciseToAdd.id,
-            sets,
-            reps,
-            trackType: 'reps'
-        });
-        saveDataToLocalStorage();
-        alert(`Added to ${routine.name}!`);
-        closeModal(addToRoutineModal);
-        showPage('routines-page');
-        const routineCard = document.querySelector(`.swipe-item-container[data-id="${routineId}"]`);
-        if(routineCard) routineCard.scrollIntoView({ behavior: 'smooth' });
+    if (!routine) return;
+
+    const trackType = modalTrackTypeToggle.querySelector('.active').dataset.trackType;
+    let exerciseData;
+
+    if (trackType === 'reps') {
+        const sets = parseInt(addToRoutineSetsInput.value);
+        const reps = addToRoutineRepsInput.value.trim();
+        if (isNaN(sets) || sets <= 0 || !reps) {
+            alert("Please enter valid sets and reps.");
+            return;
+        }
+        exerciseData = { exerciseId: exerciseToAdd.id, sets, reps, trackType: 'reps' };
+    } else { // trackType is 'time'
+        const sets = parseInt(addToRoutineTimeSetsInput.value);
+        const duration = parseInt(addToRoutineDurationInput.value);
+        if (isNaN(sets) || sets <= 0 || isNaN(duration) || duration <= 0) {
+            alert("Please enter valid sets and duration.");
+            return;
+        }
+        exerciseData = { exerciseId: exerciseToAdd.id, sets, duration, trackType: 'time' };
     }
+
+    routine.exercises.push(exerciseData);
+    saveDataToLocalStorage();
+    alert(`Added to ${routine.name}!`);
+    closeModal(addToRoutineModal);
+    showPage('routines-page');
+    const routineCard = document.querySelector(`.swipe-item-container[data-id="${routineId}"]`);
+    if(routineCard) routineCard.scrollIntoView({ behavior: 'smooth' });
 });
 cancelAddToRoutineBtn.addEventListener('click', () => closeModal(addToRoutineModal));
 
@@ -1045,6 +1142,7 @@ closeRoutineDetailsBtn.addEventListener('click', () => closeModal(routineDetails
 // --- 8. INITIALIZE APP ---
 async function initializeApp() {
     loadDataFromLocalStorage();
+    loadRoutineBuilderState(); 
     await loadExercisesFromCSV();
     populateFilterControls();
     showPage('workout-page');
