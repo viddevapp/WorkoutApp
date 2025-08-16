@@ -213,7 +213,12 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .details-muscle-list { list-style: none; padding: 0; }
 .details-muscle-list li { margin-bottom: 8px; }
 .details-muscle-list li strong { color: var(--color-text-primary); display: inline-block; width: 100px; }
-#details-modal-close-btn { margin: 0 16px 16px; }
+#details-modal-close-btn { 
+    margin: 0 auto 16px auto; 
+    width: auto; 
+    display: block; 
+    padding: 8px 32px;
+}
 
 /* Routine Editor */
 .autocomplete-container { position: relative; }
