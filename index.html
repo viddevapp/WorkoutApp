@@ -256,6 +256,10 @@
         <div class="modal-content">
             <h3 id="edit-modal-title">Edit Exercise</h3>
             <form id="edit-workout-exercise-form">
+                <div class="track-type-toggle" id="edit-modal-track-type-toggle">
+                    <button type="button" class="track-type-btn" data-track-type="reps">Reps</button>
+                    <button type="button" class="track-type-btn" data-track-type="time">Time</button>
+                </div>
                  <div id="edit-reps-based-inputs">
                     <div class="inputs-grid">
                         <input type="number" id="edit-sets-input" placeholder="Sets">
@@ -275,7 +279,7 @@
             </form>
         </div>
     </div>
-
+    
     <div id="theme-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content">
