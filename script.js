@@ -61,7 +61,9 @@ function loadDataFromLocalStorage() {
 }
 // --- [NEW] ROUTINE BUILDER STATE MANAGEMENT ---
 function saveRoutineBuilderState() {
-    const stateToSave = {
+    cif (!allData.exerciseDatabase) allData.exerciseDatabase = [];
+    }
+}onst stateToSave = {
         builder: routineBuilderState,
         editing: routineEditingState,
         name: routineNameInput.value
@@ -116,7 +118,9 @@ async function loadExercisesFromCSV() {
         });
 
         allData.exerciseDatabase = data.map((row, index) => ({
-            id: Date.now() + index,
+            // --- THIS IS THE LINE TO CHANGE ---
+            id: index, // Use the stable row index instead of Date.now()
+            // ------------------------------------
             name: row['Exercise'],
             videoUrl: row['Video URL'],
             type: row['Type'],
