@@ -36,8 +36,14 @@ const swapExerciseModal = document.getElementById('swap-exercise-modal'), swapEx
 const editWorkoutExerciseModal = document.getElementById('edit-workout-exercise-modal'), editWorkoutExerciseForm = document.getElementById('edit-workout-exercise-form'), editModalTitle = document.getElementById('edit-modal-title'), editRepsBasedInputs = document.getElementById('edit-reps-based-inputs'), editTimeBasedInputs = document.getElementById('edit-time-based-inputs'), editSetsInput = document.getElementById('edit-sets-input'), editRepsInput = document.getElementById('edit-reps-input'), editTimeSetsInput = document.getElementById('edit-time-sets-input'), editDurationInput = document.getElementById('edit-duration-input'), cancelEditBtn = document.getElementById('cancel-edit-btn');
 const filterCategorySelect = document.getElementById('filter-category'), filterMuscleSelect = document.getElementById('filter-muscle'), filterTypeSelect = document.getElementById('filter-type'), sortExercisesSelect = document.getElementById('sort-exercises');
 const exerciseDetailsModal = document.getElementById('exercise-details-modal'), detailsVideoContainer = document.getElementById('details-video-container'), detailsExerciseName = document.getElementById('details-exercise-name'), detailsTabContent = document.getElementById('details-tab-content'), detailsModalCloseBtn = document.getElementById('details-modal-close-btn');
-const addToRoutineModal = document.getElementById('add-to-routine-modal'), addToRoutineForm = document.getElementById('add-to-routine-form'), addToRoutineTitle = document.getElementById('add-to-routine-title'), addToRoutineSelect = document.getElementById('add-to-routine-select'), addToRoutineSetsInput = document.getElementById('add-to-routine-sets'), addToRoutineRpsInput = document.getElementById('add-to-routine-reps'), cancelAddToRoutineBtn = document.getElementById('cancel-add-to-routine-btn');
+const addToRoutineModal = document.getElementById('add-to-routine-modal'), addToRoutineForm = document.getElementById('add-to-routine-form'), addToRoutineTitle = document.getElementById('add-to-routine-title'), addToRoutineSelect = document.getElementById('add-to-routine-select'), addToRoutineSetsInput = document.getElementById('add-to-routine-sets'), addToRoutineRepsInput = document.getElementById('add-to-routine-reps'), cancelAddToRoutineBtn = document.getElementById('cancel-add-to-routine-btn');
 const routineDetailsModal = document.getElementById('routine-details-modal'), routineDetailsTitle = document.getElementById('routine-details-title'), routineDetailsList = document.getElementById('routine-details-list'), closeRoutineDetailsBtn = document.getElementById('close-routine-details-btn');
+// [NEW] References for the "Add to Routine" modal's new inputs
+const modalTrackTypeToggle = document.getElementById('modal-track-type-toggle');
+const modalRepsBasedInputs = document.getElementById('modal-reps-based-inputs');
+const modalTimeBasedInputs = document.getElementById('modal-time-based-inputs');
+const addToRoutineTimeSetsInput = document.getElementById('add-to-routine-time-sets');
+const addToRoutineDurationInput = document.getElementById('add-to-routine-duration');
 
 const circleCircumference = 2 * Math.PI * 54;
 const SWIPE_ACTION_WIDTH = 160; // 2 buttons
@@ -59,7 +65,6 @@ function loadDataFromLocalStorage() {
         } catch (e) { console.error("Could not parse data", e); }
     }
 }
-// --- [NEW] ROUTINE BUILDER STATE MANAGEMENT ---
 function saveRoutineBuilderState() {
     const stateToSave = {
         builder: routineBuilderState,
@@ -85,7 +90,7 @@ function loadRoutineBuilderState() {
             }
         } catch (e) {
             console.error("Could not parse routine builder progress", e);
-            localStorage.removeItem('workoutBuilderProgress'); // Clear corrupted data
+            localStorage.removeItem('workoutBuilderProgress');
         }
     }
 }
@@ -116,7 +121,7 @@ async function loadExercisesFromCSV() {
         });
 
         allData.exerciseDatabase = data.map((row, index) => ({
-            id: index, // [MODIFIED] Use stable index for the ID
+            id: index,
             name: row['Exercise'],
             videoUrl: row['Video URL'],
             type: row['Type'],
@@ -876,7 +881,7 @@ exportDataBtn.addEventListener('click', () => { exportDataToFile(); actionsDropd
 importDataBtn.addEventListener('click', () => { fileLoaderInput.click(); actionsDropdown.classList.add('hidden'); });
 fileLoaderInput.addEventListener('change', importDataFromFile);
 
-// --- NEW --- FILTERING AND DETAILS MODAL ---
+// --- FILTERING AND DETAILS MODAL ---
 function populateFilterControls() {
     const categories = [...new Set(allData.exerciseDatabase.map(ex => ex.category))].sort();
     const muscles = [...new Set(allData.exerciseDatabase.map(ex => ex.primaryMuscles))].sort();
@@ -945,6 +950,14 @@ function openAddToRoutineModal(id) {
     allData.routines.forEach(r => {
         addToRoutineSelect.innerHTML += `<option value="${r.id}">${r.name}</option>`;
     });
+    
+    // [NEW] Reset the modal to the default "Reps" view each time it's opened
+    modalRepsBasedInputs.classList.remove('hidden');
+    modalTimeBasedInputs.classList.add('hidden');
+    const activeButton = modalTrackTypeToggle.querySelector('.track-type-btn[data-track-type="reps"]');
+    modalTrackTypeToggle.querySelector('.active').classList.remove('active');
+    activeButton.classList.add('active');
+    
     openModal(addToRoutineModal);
 }
 
@@ -963,32 +976,61 @@ exerciseDetailsModal.addEventListener('click', e => {
     }
 });
 
+// [MODIFIED] Logic for the "Add to Routine" modal form
+modalTrackTypeToggle.addEventListener('click', e => {
+    if (e.target.matches('.track-type-btn')) {
+        const type = e.target.dataset.trackType;
+        modalTrackTypeToggle.querySelector('.active').classList.remove('active');
+        e.target.classList.add('active');
+        if (type === 'reps') {
+            modalRepsBasedInputs.classList.remove('hidden');
+            modalTimeBasedInputs.classList.add('hidden');
+        } else {
+            modalRepsBasedInputs.classList.add('hidden');
+            modalTimeBasedInputs.classList.remove('hidden');
+        }
+    }
+});
+
 addToRoutineForm.addEventListener('submit', e => {
     e.preventDefault();
     const routineId = parseInt(addToRoutineSelect.value);
-    const sets = parseInt(addToRoutineSetsInput.value);
-    const reps = addToRoutineRepsInput.value.trim();
-
-    if (isNaN(routineId) || isNaN(sets) || !reps) {
-        alert("Please fill out all fields.");
+    if (isNaN(routineId)) {
+        alert("Please choose a routine.");
         return;
     }
 
     const routine = allData.routines.find(r => r.id === routineId);
-    if (routine) {
-        routine.exercises.push({
-            exerciseId: exerciseToAdd.id,
-            sets,
-            reps,
-            trackType: 'reps'
-        });
-        saveDataToLocalStorage();
-        alert(`Added to ${routine.name}!`);
-        closeModal(addToRoutineModal);
-        showPage('routines-page');
-        const routineCard = document.querySelector(`.swipe-item-container[data-id="${routineId}"]`);
-        if(routineCard) routineCard.scrollIntoView({ behavior: 'smooth' });
+    if (!routine) return;
+
+    const trackType = modalTrackTypeToggle.querySelector('.active').dataset.trackType;
+    let exerciseData;
+
+    if (trackType === 'reps') {
+        const sets = parseInt(addToRoutineSetsInput.value);
+        const reps = addToRoutineRepsInput.value.trim();
+        if (isNaN(sets) || sets <= 0 || !reps) {
+            alert("Please enter valid sets and reps.");
+            return;
+        }
+        exerciseData = { exerciseId: exerciseToAdd.id, sets, reps, trackType: 'reps' };
+    } else { // trackType is 'time'
+        const sets = parseInt(addToRoutineTimeSetsInput.value);
+        const duration = parseInt(addToRoutineDurationInput.value);
+        if (isNaN(sets) || sets <= 0 || isNaN(duration) || duration <= 0) {
+            alert("Please enter valid sets and duration.");
+            return;
+        }
+        exerciseData = { exerciseId: exerciseToAdd.id, sets, duration, trackType: 'time' };
     }
+
+    routine.exercises.push(exerciseData);
+    saveDataToLocalStorage();
+    alert(`Added to ${routine.name}!`);
+    closeModal(addToRoutineModal);
+    showPage('routines-page');
+    const routineCard = document.querySelector(`.swipe-item-container[data-id="${routineId}"]`);
+    if(routineCard) routineCard.scrollIntoView({ behavior: 'smooth' });
 });
 cancelAddToRoutineBtn.addEventListener('click', () => closeModal(addToRoutineModal));
 
