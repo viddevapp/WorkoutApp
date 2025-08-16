@@ -591,7 +591,14 @@ function resetRoutineForm() {
     renderRoutineBuilderList();
     clearRoutineBuilderState();
 }
-function changeDate(days) { currentDate.setDate(currentDate.getDate() + days); closeStopwatchModal(true); renderCurrentPage(); }
+
+// THIS IS THE CORRECTED FUNCTION
+function changeDate(days) {
+    currentDate.setDate(currentDate.getDate() + days);
+    closeStopwatchModal(true);
+    renderCurrentPage();
+    renderDateControls(); // This ensures the date display updates
+}
 function exportDataToFile() { try { const dataAsString = JSON.stringify({ ...allData, exerciseDatabase: [] }, null, 2); const blob = new Blob([dataAsString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `workout-tracker-backup-${getFormattedDate(new Date())}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); } catch (error) { console.error("Export failed:", error); alert("Could not export data."); } }
 function importDataFromFile(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function (e) { try { const importedData = JSON.parse(e.target.result); if (!importedData.history || !importedData.userGoals) { throw new Error("Invalid data file format."); } if (confirm("This will overwrite all current data. Are you sure you want to proceed?")) { allData.routines = importedData.routines || []; allData.history = importedData.history; allData.userGoals = importedData.userGoals; currentDate = new Date(); saveDataToLocalStorage(); renderCurrentPage(); alert("Data imported successfully!"); } } catch (error) { alert('Error reading or parsing file. Please make sure you selected a valid backup file.'); console.error(error); } finally { fileLoaderInput.value = ""; } }; reader.readAsText(file); }
 
@@ -954,7 +961,7 @@ appContainer.addEventListener('click', e => {
     }
 });
 
-// THIS IS THE FIX: The listener is now on 'globalTimerControls' instead of 'trackerFooter'
+
 globalTimerControls.addEventListener('click', (e) => {
     const t = e.target;
     const dateKey = getFormattedDate(currentDate);
@@ -1016,7 +1023,13 @@ closeCompleteModalBtn.addEventListener('click', () => { closeModal(workoutComple
 
 prevDayBtn.addEventListener('click', () => changeDate(-1));
 nextDayBtn.addEventListener('click', () => changeDate(1));
-dateDisplayBtn.addEventListener('click', () => { if (dateDisplayBtn.disabled) return; currentDate = new Date(); renderCurrentPage(); });
+// THIS IS ALSO CORRECTED TO ENSURE 'TODAY' WORKS RELIABLY
+dateDisplayBtn.addEventListener('click', () => {
+    if (dateDisplayBtn.disabled) return;
+    currentDate = new Date();
+    renderCurrentPage();
+    renderDateControls();
+});
 document.addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) { allModals.forEach(m => closeModal(m)); closeCountdownModal(); closeStopwatchModal(true); } });
 countdownModal.addEventListener('click', e => { if (e.target.classList.contains('modal-content') || e.target.classList.contains('countdown-timer-wrapper')) closeCountdownModal(); });
 actionsMenuBtn.addEventListener('click', () => actionsDropdown.classList.toggle('hidden'));
@@ -1356,4 +1369,4 @@ async function initializeApp() {
     initRoutineBuilderSortable();
     renderRoutineBuilderList();
 }
-initializeApp(); 
+initializeApp();
