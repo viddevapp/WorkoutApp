@@ -888,17 +888,22 @@ appContainer.addEventListener('click', e => {
             populateExerciseDropdown(swapExerciseSelect);
             openModal(swapExerciseModal);
         } else if (editBtnWorkout) {
+            // --- [MODIFIED] Logic to show correct inputs in Edit Modal ---
             const instanceId = parseFloat(editBtnWorkout.dataset.instanceId);
             swipeState.instanceIdToEdit = instanceId;
             const exercise = allData.history[getFormattedDate(currentDate)].routine.exercises.find(ex => ex.instanceId === instanceId);
             if (exercise) {
                 editModalTitle.textContent = `Edit ${exercise.name}`;
                 if (exercise.trackType === 'time') {
-                    editTimeBasedInputs.classList.remove('hidden'); editRepsBasedInputs.classList.add('hidden');
-                    editTimeSetsInput.value = exercise.sets; editDurationInput.value = exercise.duration;
+                    editTimeBasedInputs.classList.remove('hidden');
+                    editRepsBasedInputs.classList.add('hidden');
+                    editTimeSetsInput.value = exercise.sets;
+                    editDurationInput.value = exercise.duration;
                 } else {
-                    editRepsBasedInputs.classList.remove('hidden'); editTimeBasedInputs.classList.add('hidden');
-                    editSetsInput.value = exercise.sets; editRepsInput.value = exercise.reps;
+                    editRepsBasedInputs.classList.remove('hidden');
+                    editTimeBasedInputs.classList.add('hidden');
+                    editSetsInput.value = exercise.sets;
+                    editRepsInput.value = exercise.reps;
                 }
                 openModal(editWorkoutExerciseModal);
             }
@@ -946,7 +951,32 @@ trackerFooter.addEventListener('click', (e) => {
 swapExerciseForm.addEventListener('submit', e => { e.preventDefault(); const newExerciseId = parseInt(swapExerciseSelect.value); if (isNaN(newExerciseId) || !swipeState.instanceIdToSwap) return; const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; const exerciseIndex = workoutData.routine.exercises.findIndex(ex => ex.instanceId === swipeState.instanceIdToSwap); const progressIndex = workoutData.progress.findIndex(p => p.instanceId === swipeState.instanceIdToSwap); if (exerciseIndex === -1) return; const originalExercise = workoutData.routine.exercises[exerciseIndex]; const newExerciseDbEntry = allData.exerciseDatabase.find(dbEx => dbEx.id === newExerciseId); const newWorkoutExercise = { ...newExerciseDbEntry, sets: originalExercise.sets, reps: newExerciseDbEntry.trackType === 'reps' ? (originalExercise.reps || '8-12') : undefined, duration: newExerciseDbEntry.trackType === 'time' ? (originalExercise.duration || 60) : undefined, trackType: newExerciseDbEntry.trackType, instanceId: Date.now() + Math.random(), exerciseId: newExerciseId }; workoutData.routine.exercises.splice(exerciseIndex, 1, newWorkoutExercise); if (progressIndex > -1) { workoutData.progress[progressIndex].instanceId = newWorkoutExercise.instanceId; } saveDataToLocalStorage(); renderWorkoutPage(); closeModal(swapExerciseModal); swipeState.instanceIdToSwap = null; });
 cancelSwapBtn.addEventListener('click', () => closeModal(swapExerciseModal));
 
-editWorkoutExerciseForm.addEventListener('submit', e => { e.preventDefault(); const instanceId = swipeState.instanceIdToEdit; if (!instanceId) return; const workoutData = allData.history[getFormattedDate(currentDate)]; const exercise = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId); if (exercise) { if (exercise.trackType === 'time') { const newSets = parseInt(editTimeSetsInput.value); const newDuration = parseInt(editDurationInput.value); if (newSets > 0) exercise.sets = newSets; if (newDuration > 0) exercise.duration = newDuration; } else { const newSets = parseInt(editSetsInput.value); const newReps = editRepsInput.value.trim(); if (newSets > 0) exercise.sets = newSets; if (newReps) exercise.reps = newReps; } saveDataToLocalStorage(); renderWorkoutPage(); closeModal(editWorkoutExerciseModal); swipeState.instanceIdToEdit = null; } });
+editWorkoutExerciseForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const instanceId = swipeState.instanceIdToEdit;
+    if (!instanceId) return;
+    const workoutData = allData.history[getFormattedDate(currentDate)];
+    const exercise = workoutData.routine.exercises.find(ex => ex.instanceId === instanceId);
+    
+    // --- [MODIFIED] Logic to save correct inputs from Edit Modal ---
+    if (exercise) {
+        if (exercise.trackType === 'time') {
+            const newSets = parseInt(editTimeSetsInput.value);
+            const newDuration = parseInt(editDurationInput.value);
+            if (newSets > 0) exercise.sets = newSets;
+            if (newDuration > 0) exercise.duration = newDuration;
+        } else {
+            const newSets = parseInt(editSetsInput.value);
+            const newReps = editRepsInput.value.trim();
+            if (newSets > 0) exercise.sets = newSets;
+            if (newReps) exercise.reps = newReps;
+        }
+        saveDataToLocalStorage();
+        renderWorkoutPage();
+        closeModal(editWorkoutExerciseModal);
+        swipeState.instanceIdToEdit = null;
+    }
+});
 cancelEditBtn.addEventListener('click', () => closeModal(editWorkoutExerciseModal));
 
 
