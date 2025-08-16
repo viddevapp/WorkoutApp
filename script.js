@@ -10,7 +10,6 @@ let routineBuilderSortable = null, dailyWorkoutSortable = null, savedRoutinesSor
 let swipeState = { openCardContent: null, instanceIdToSwap: null, instanceIdToEdit: null };
 let exerciseToAdd = { id: null };
 let activeRoutineDetails = { id: null };
-let detailsModalExerciseId = null; // To track which exercise is in the details modal
 
 let allData = {
     exerciseDatabase: [],
@@ -36,9 +35,10 @@ const workoutCompleteModal = document.getElementById('workout-complete-modal'), 
 const swapExerciseModal = document.getElementById('swap-exercise-modal'), swapExerciseForm = document.getElementById('swap-exercise-form'), swapExerciseSelect = document.getElementById('swap-exercise-select'), cancelSwapBtn = document.getElementById('cancel-swap-btn');
 const editWorkoutExerciseModal = document.getElementById('edit-workout-exercise-modal'), editWorkoutExerciseForm = document.getElementById('edit-workout-exercise-form'), editModalTitle = document.getElementById('edit-modal-title'), editRepsBasedInputs = document.getElementById('edit-reps-based-inputs'), editTimeBasedInputs = document.getElementById('edit-time-based-inputs'), editSetsInput = document.getElementById('edit-sets-input'), editRepsInput = document.getElementById('edit-reps-input'), editTimeSetsInput = document.getElementById('edit-time-sets-input'), editDurationInput = document.getElementById('edit-duration-input'), cancelEditBtn = document.getElementById('cancel-edit-btn');
 const filterCategorySelect = document.getElementById('filter-category'), filterMuscleSelect = document.getElementById('filter-muscle'), filterTypeSelect = document.getElementById('filter-type'), sortExercisesSelect = document.getElementById('sort-exercises');
-const exerciseDetailsModal = document.getElementById('exercise-details-modal'), detailsVideoContainer = document.getElementById('details-video-container'), detailsExerciseName = document.getElementById('details-exercise-name'), detailsContentArea = document.getElementById('details-content-area'), detailsModalCloseBtn = document.getElementById('details-modal-close-btn'), detailsModalAddToRoutineBtn = document.getElementById('details-modal-add-to-routine-btn');
+const exerciseDetailsModal = document.getElementById('exercise-details-modal'), detailsVideoContainer = document.getElementById('details-video-container'), detailsExerciseName = document.getElementById('details-exercise-name'), detailsTabContent = document.getElementById('details-tab-content'), detailsModalCloseBtn = document.getElementById('details-modal-close-btn');
 const addToRoutineModal = document.getElementById('add-to-routine-modal'), addToRoutineForm = document.getElementById('add-to-routine-form'), addToRoutineTitle = document.getElementById('add-to-routine-title'), addToRoutineSelect = document.getElementById('add-to-routine-select'), addToRoutineSetsInput = document.getElementById('add-to-routine-sets'), addToRoutineRepsInput = document.getElementById('add-to-routine-reps'), cancelAddToRoutineBtn = document.getElementById('cancel-add-to-routine-btn');
 const routineDetailsModal = document.getElementById('routine-details-modal'), routineDetailsTitle = document.getElementById('routine-details-title'), routineDetailsList = document.getElementById('routine-details-list'), closeRoutineDetailsBtn = document.getElementById('close-routine-details-btn');
+// [NEW] References for the "Add to Routine" modal's new inputs
 const modalTrackTypeToggle = document.getElementById('modal-track-type-toggle');
 const modalRepsBasedInputs = document.getElementById('modal-reps-based-inputs');
 const modalTimeBasedInputs = document.getElementById('modal-time-based-inputs');
@@ -137,20 +137,8 @@ async function loadExercisesFromCSV() {
     }
 }
 function openModal(modalElement) { modalElement.classList.remove('hidden'); }
-function closeModal(modalElement) { modalElement.classList.add('hidden'); if (modalElement.id === 'exercise-details-modal') { detailsVideoContainer.innerHTML = ''; detailsModalExerciseId = null; } }
+function closeModal(modalElement) { modalElement.classList.add('hidden'); if (modalElement.id === 'exercise-details-modal') { detailsVideoContainer.innerHTML = ''; } }
 function getFormattedDate(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
-
-// [NEW] Robust function to get YouTube video ID from various URL formats
-function getYoutubeVideoId(url) {
-    if (!url) return null;
-    let videoId = null;
-    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-    const match = url.match(regex);
-    if (match) {
-        videoId = match[1];
-    }
-    return videoId;
-}
 
 function startCountdown(duration, nextExercise = null) {
     clearInterval(countdownIntervalId);
@@ -417,9 +405,6 @@ function renderWorkoutPage() {
                                 <span class="exercise-item-name">${exercise.name}</span>
                                 <small class="exercise-item-stats">${stats}</small>
                             </div>
-                            <button class="workout-details-btn details-btn" data-id="${exercise.id}" aria-label="More Details">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" /></svg>
-                            </button>
                         </div>
                         ${trackingUI}
                         <div class="timer-controls">
@@ -749,13 +734,6 @@ appContainer.addEventListener('click', e => {
     if (isSwiping || (touchStartX !== 0 && touchStartX !== touchCurrentX)) { touchStartX = 0; touchCurrentX = 0; if (t.closest('.swipe-content')) { e.stopPropagation(); } return; }
     if (swipeState.openCardContent && !t.closest('.swipe-actions')) { resetSwipeState(); }
 
-    const detailsBtn = t.closest('.details-btn');
-    if (detailsBtn) {
-        const id = parseInt(detailsBtn.dataset.id);
-        openDetailsModal(id);
-        return;
-    }
-
     // Routine Page Actions
     const routinePageActions = t.closest('#routines-page');
     if (routinePageActions) {
@@ -795,8 +773,12 @@ appContainer.addEventListener('click', e => {
     // Exercise Page Actions
     const exercisePageActions = t.closest('#exercises-page');
     if (exercisePageActions) {
+        const detailsBtn = t.closest('.details-btn');
         const addToRoutineBtn = t.closest('.add-to-routine-btn');
-        if (addToRoutineBtn) {
+        if (detailsBtn) {
+            const id = parseInt(detailsBtn.dataset.id);
+            openDetailsModal(id);
+        } else if (addToRoutineBtn) {
             const id = parseInt(addToRoutineBtn.dataset.id);
             openAddToRoutineModal(id);
         }
@@ -928,28 +910,31 @@ function openDetailsModal(exerciseId) {
     const exercise = allData.exerciseDatabase.find(ex => ex.id === exerciseId);
     if (!exercise) return;
 
-    detailsModalExerciseId = exerciseId;
     detailsExerciseName.textContent = exercise.name;
-    
-    const videoId = getYoutubeVideoId(exercise.videoUrl);
-    if (videoId) {
-        detailsVideoContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+    if (exercise.videoUrl) {
+        detailsVideoContainer.innerHTML = `<iframe src="${exercise.videoUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
     } else {
         detailsVideoContainer.innerHTML = '<div class="placeholder-card" style="margin:0; border-radius:0;">No video available.</div>';
     }
     
-    detailsContentArea.innerHTML = `
-        <h4>Instructions</h4>
-        <p>${exercise.instructions || 'No instructions available.'}</p>
-        <h4>Muscles & Details</h4>
-        <ul class="details-muscle-list">
-            <li><strong>Primary:</strong> ${exercise.primaryMuscles}</li>
-            <li><strong>Secondary:</strong> ${exercise.secondaryMuscles || 'None'}</li>
-            <li><strong>Category:</strong> ${exercise.category}</li>
-            <li><strong>Type:</strong> ${exercise.type}</li>
-        </ul>`;
-    
+    document.querySelector('.details-tab-btn.active').classList.remove('active');
+    document.querySelector('.details-tab-btn[data-tab="instructions"]').classList.add('active');
+    renderTabContent('instructions', exercise);
     openModal(exerciseDetailsModal);
+}
+
+function renderTabContent(tab, exercise) {
+    if (tab === 'instructions') {
+        detailsTabContent.innerHTML = `<p>${exercise.instructions || 'No instructions available.'}</p>`;
+    } else if (tab === 'muscles') {
+        detailsTabContent.innerHTML = `
+            <ul class="details-muscle-list">
+                <li><strong>Primary:</strong> ${exercise.primaryMuscles}</li>
+                <li><strong>Secondary:</strong> ${exercise.secondaryMuscles || 'None'}</li>
+                <li><strong>Category:</strong> ${exercise.category}</li>
+                <li><strong>Type:</strong> ${exercise.type}</li>
+            </ul>`;
+    }
 }
 
 function openAddToRoutineModal(id) {
@@ -966,6 +951,7 @@ function openAddToRoutineModal(id) {
         addToRoutineSelect.innerHTML += `<option value="${r.id}">${r.name}</option>`;
     });
     
+    // [NEW] Reset the modal to the default "Reps" view each time it's opened
     modalRepsBasedInputs.classList.remove('hidden');
     modalTimeBasedInputs.classList.add('hidden');
     const activeButton = modalTrackTypeToggle.querySelector('.track-type-btn[data-track-type="reps"]');
@@ -980,13 +966,17 @@ filterMuscleSelect.addEventListener('change', handleFilterChange);
 filterTypeSelect.addEventListener('change', handleFilterChange);
 sortExercisesSelect.addEventListener('change', handleFilterChange);
 detailsModalCloseBtn.addEventListener('click', () => closeModal(exerciseDetailsModal));
-detailsModalAddToRoutineBtn.addEventListener('click', () => {
-    if (detailsModalExerciseId !== null) {
-        closeModal(exerciseDetailsModal);
-        openAddToRoutineModal(detailsModalExerciseId);
+exerciseDetailsModal.addEventListener('click', e => {
+    if (e.target.classList.contains('details-tab-btn')) {
+        const tab = e.target.dataset.tab;
+        const exercise = allData.exerciseDatabase.find(ex => ex.name === detailsExerciseName.textContent);
+        document.querySelector('.details-tab-btn.active').classList.remove('active');
+        e.target.classList.add('active');
+        renderTabContent(tab, exercise);
     }
 });
 
+// [MODIFIED] Logic for the "Add to Routine" modal form
 modalTrackTypeToggle.addEventListener('click', e => {
     if (e.target.matches('.track-type-btn')) {
         const type = e.target.dataset.trackType;
