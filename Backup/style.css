@@ -110,27 +110,6 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .set-circle { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--color-primary); background-color: transparent; transition: var(--transition-fast); }
 .set-circle.completed { background-color: var(--color-primary-hover); border-color: var(--color-primary-hover); }
 .exercise-actions { margin-top: auto; }
-#active-routine-display .workout-summary-card { max-width: 600px; margin-left: auto; margin-right: auto; }
-.workout-summary-card { padding: 0; }
-.summary-header { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 16px; border-bottom: 1px solid var(--color-border); text-align: center; }
-.summary-header > div { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.summary-header h2 { border: none; font-size: 24px; margin: 0; }
-.summary-total-time { font-size: 32px; color: var(--color-primary); font-weight: 700; line-height: 1; }
-.summary-total-time::before { content: 'Total Workout Time'; display: block; font-size: 14px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-.summary-header .btn-primary { flex-shrink: 0; width: auto; padding: 8px 24px; }
-.summary-exercise-card { background-color: var(--color-background); border: 1px solid var(--color-border); border-radius: var(--radius-md); margin: 0 16px 12px 16px; }
-.summary-exercise-header { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid var(--color-border); justify-content: center; }
-.summary-exercise-header .exercise-item-main { flex-grow: 0; text-align: center; }
-.summary-exercise-header .exercise-item-name { font-size: 16px; }
-.summary-exercise-header .exercise-item-stats { font-size: 12px; }
-.summary-sets-list { display: flex; flex-direction: column; gap: 8px; padding: 12px; }
-.summary-set-item { display: flex; justify-content: center; align-items: center; gap: 12px; }
-.summary-set-item .set-label { font-size: 14px; font-weight: 500; color: var(--color-text-secondary); width: 50px; text-align: right; }
-.summary-set-item input { padding: 8px; font-size: 14px; text-align: center; width: 80px; }
-.summary-logged-time { font-family: monospace; font-size: 14px; color: var(--color-text-secondary); }
-.summary-notes-section { padding: 16px; }
-.summary-notes-section h3 { margin: 0 0 12px 0; font-size: 16px; text-align: center; }
-.summary-actions { padding: 16px; border-top: 1px solid var(--color-border); }
 .set-progress-display { text-align: center; color: var(--color-text-secondary); font-size: 14px; font-weight: 500; margin-bottom: 12px; }
 .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
 .toggle-switch input { opacity: 0; width: 0; height: 0; }
@@ -138,6 +117,143 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .toggle-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
 input:checked + .toggle-slider { background-color: var(--color-accent); }
 input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+/* --- [OVERHAULED] WORKOUT SUMMARY STYLES --- */
+.workout-summary-card {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0;
+}
+.summary-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 24px;
+    border-bottom: 1px solid var(--color-border);
+    text-align: center;
+}
+.summary-header > div {
+    text-align: center;
+}
+.summary-header h2 {
+    border: none;
+    font-size: 24px;
+    margin: 0 0 4px 0;
+    line-height: 1.2;
+}
+.summary-total-time {
+    font-size: 16px;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+.summary-total-time::before {
+    content: 'Total Time: ';
+    color: var(--color-text-tertiary);
+}
+.summary-header .btn-primary {
+    flex-shrink: 0;
+    width: auto;
+    padding: 10px 20px;
+}
+.summary-exercise-card {
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+.summary-exercise-card:last-of-type {
+    border-bottom: none;
+}
+.summary-exercise-header {
+    padding: 0;
+    margin-bottom: 16px;
+    border-bottom: none;
+    justify-content: flex-start;
+}
+.summary-exercise-header .exercise-item-main {
+    text-align: left;
+}
+.summary-exercise-header .exercise-item-name {
+    font-size: 18px;
+    font-weight: 600;
+}
+.summary-exercise-header .exercise-item-stats {
+    font-size: 14px;
+}
+.summary-sets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0;
+}
+.summary-sets-list-header {
+    display: flex;
+    gap: 12px;
+    color: var(--color-text-tertiary);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 0 10px;
+}
+.summary-sets-list-header .set-label {
+    width: 50px;
+}
+.summary-sets-list-header .reps-label,
+.summary-sets-list-header .weight-label {
+    flex: 1;
+}
+.summary-set-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.summary-set-item .set-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    width: 50px;
+    text-align: center;
+}
+.summary-set-item input {
+    flex: 1;
+    padding: 10px;
+    font-size: 15px;
+    text-align: center;
+    background-color: var(--color-surface-raised);
+}
+.summary-logged-time {
+    font-family: monospace;
+    font-size: 16px;
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-raised);
+    padding: 10px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    flex-grow: 1;
+    text-align: center;
+}
+.summary-notes-section {
+    padding: 24px;
+    border-top: 1px solid var(--color-border);
+}
+.summary-notes-section h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    text-align: left;
+    color: var(--color-text-secondary);
+}
+.summary-notes-section textarea {
+    background-color: var(--color-surface-raised);
+}
+.summary-actions {
+    padding: 0 24px 24px;
+    border-top: none;
+}
 
 /* 8. Footers */
 #tracker-footer { padding: 12px 16px; background-color: var(--color-surface); border-top: 1px solid var(--color-border); padding-bottom: calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; }
@@ -228,41 +344,9 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .item-action-btn:hover { color: var(--color-primary); }
 .item-action-btn.delete-btn:hover { color: var(--color-danger); }
 
-/* --- [NEW] THEME MODAL STYLES --- */
-#theme-selection-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-    margin-top: 16px;
-}
-.theme-swatch {
-    background-color: var(--color-background);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 12px;
-    cursor: pointer;
-    transition: var(--transition-fast);
-    text-align: center;
-    color: var(--color-text-secondary);
-}
-.theme-swatch:hover {
-    border-color: var(--color-primary-hover);
-    color: var(--color-text-primary);
-}
-.theme-swatch.active {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 40%, transparent);
-    color: var(--color-text-primary);
-}
-.theme-swatch-colors {
-    display: flex;
-    height: 40px;
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    margin-bottom: 8px;
-    border: 1px solid var(--color-border);
-}
-.theme-swatch-color {
-    width: 50%;
-    height: 100%;
-}
+#theme-selection-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 16px; }
+.theme-swatch { background-color: var(--color-background); border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 12px; cursor: pointer; transition: var(--transition-fast); text-align: center; color: var(--color-text-secondary); }
+.theme-swatch:hover { border-color: var(--color-primary-hover); color: var(--color-text-primary); }
+.theme-swatch.active { border-color: var(--color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 40%, transparent); color: var(--color-text-primary); }
+.theme-swatch-colors { display: flex; height: 40px; border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 8px; border: 1px solid var(--color-border); }
+.theme-swatch-color { width: 50%; height: 100%; }

@@ -47,6 +47,7 @@ const swapExerciseModal = document.getElementById('swap-exercise-modal'), swapEx
 const editWorkoutExerciseModal = document.getElementById('edit-workout-exercise-modal'), editWorkoutExerciseForm = document.getElementById('edit-workout-exercise-form'), editModalTitle = document.getElementById('edit-modal-title'), editRepsBasedInputs = document.getElementById('edit-reps-based-inputs'), editTimeBasedInputs = document.getElementById('edit-time-based-inputs'), editSetsInput = document.getElementById('edit-sets-input'), editRepsInput = document.getElementById('edit-reps-input'), editTimeSetsInput = document.getElementById('edit-time-sets-input'), editDurationInput = document.getElementById('edit-duration-input'), cancelEditBtn = document.getElementById('cancel-edit-btn');
 const editModalTrackTypeToggle = document.getElementById('edit-modal-track-type-toggle');
 const filterCategorySelect = document.getElementById('filter-category'), filterMuscleSelect = document.getElementById('filter-muscle'), filterTypeSelect = document.getElementById('filter-type'), sortExercisesSelect = document.getElementById('sort-exercises');
+const exerciseSearchInput = document.getElementById('exercise-search-input');
 const exerciseDetailsModal = document.getElementById('exercise-details-modal'), detailsVideoContainer = document.getElementById('details-video-container'), detailsExerciseName = document.getElementById('details-exercise-name'), detailsTabContent = document.getElementById('details-tab-content'), detailsModalCloseBtn = document.getElementById('details-modal-close-btn');
 const addToRoutineModal = document.getElementById('add-to-routine-modal'), addToRoutineForm = document.getElementById('add-to-routine-form'), addToRoutineTitle = document.getElementById('add-to-routine-title'), addToRoutineSelect = document.getElementById('add-to-routine-select'), addToRoutineSetsInput = document.getElementById('add-to-routine-sets'), addToRoutineRepsInput = document.getElementById('add-to-routine-reps'), cancelAddToRoutineBtn = document.getElementById('cancel-add-to-routine-btn');
 const routineDetailsModal = document.getElementById('routine-details-modal'), routineDetailsTitle = document.getElementById('routine-details-title'), routineDetailsList = document.getElementById('routine-details-list'), closeRoutineDetailsBtn = document.getElementById('close-routine-details-btn');
@@ -230,16 +231,28 @@ function renderCurrentPage() {
 }
 function renderDateControls() { const today = new Date(); today.setHours(0, 0, 0, 0); currentDate.setHours(0, 0, 0, 0); const isToday = currentDate.getTime() === today.getTime(); dateDisplayBtn.textContent = isToday ? 'Today' : currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); nextDayBtn.disabled = currentDate >= today; }
 
-function renderExerciseDatabase(filters = {}, sortBy = 'az') {
+function renderExerciseDatabase(filters = {}, sortBy = 'az', searchQuery = '') {
     dbExerciseListDiv.innerHTML = '';
     let filteredData = [...allData.exerciseDatabase];
 
-    if (filters.category) filteredData = filteredData.filter(ex => ex.category === filters.category);
-    if (filters.muscle) filteredData = filteredData.filter(ex => ex.primaryMuscles === filters.muscle);
-    if (filters.type) filteredData = filteredData.filter(ex => ex.type === filters.type);
+    if (searchQuery) {
+        filteredData = filteredData.filter(ex => ex.name.toLowerCase().includes(searchQuery));
+    }
+    if (filters.category) {
+        filteredData = filteredData.filter(ex => ex.category === filters.category);
+    }
+    if (filters.muscle) {
+        filteredData = filteredData.filter(ex => ex.primaryMuscles === filters.muscle);
+    }
+    if (filters.type) {
+        filteredData = filteredData.filter(ex => ex.type === filters.type);
+    }
 
-    if (sortBy === 'az') filteredData.sort((a, b) => a.name.localeCompare(b.name));
-    else if (sortBy === 'za') filteredData.sort((a, b) => b.name.localeCompare(a.name));
+    if (sortBy === 'az') {
+        filteredData.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === 'za') {
+        filteredData.sort((a, b) => b.name.localeCompare(a.name));
+    }
 
     if (filteredData.length === 0) {
         dbExerciseListDiv.innerHTML = `<div class="placeholder-card">No exercises match your filters.</div>`;
@@ -384,12 +397,17 @@ function renderWorkoutPage() {
             let setsHTML = '';
 
             if (exercise.trackType === 'reps') {
+                setsHTML += `<div class="summary-sets-list-header">
+                    <span class="set-label">Set</span>
+                    <span class="reps-label">Reps</span>
+                    <span class="weight-label">Weight</span>
+                </div>`;
                 for (let i = 0; i < progress.loggedData.length; i++) {
                     const setData = progress.loggedData[i];
                     setsHTML += `<div class="summary-set-item">
-                        <span class="set-label">Set ${i + 1}</span>
+                        <span class="set-label">${i + 1}</span>
                         <input type="text" class="summary-reps-input" value="${setData.reps}" data-instance-id="${progress.instanceId}" data-set-index="${i}">
-                        <input type="number" class="summary-weight-input" placeholder="Weight" value="${setData.weight || ''}" data-instance-id="${progress.instanceId}" data-set-index="${i}">
+                        <input type="number" class="summary-weight-input" placeholder="--" value="${setData.weight || ''}" data-instance-id="${progress.instanceId}" data-set-index="${i}">
                     </div>`;
                 }
             } else { // Time-based
@@ -403,7 +421,7 @@ function renderWorkoutPage() {
 
             summaryHTML += `<div class="summary-exercise-card">
                 <div class="summary-exercise-header">
-                    <div class="exercise-item-main" style="text-align:center;">
+                    <div class="exercise-item-main">
                         <span class="exercise-item-name">${exercise.name}</span>
                         <small class="exercise-item-stats">${stats}</small>
                     </div>
@@ -498,18 +516,6 @@ function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesS
 function initRoutineDetailsSortable(routineId) { if (routineDetailsSortable) routineDetailsSortable.destroy(); routineDetailsSortable = new Sortable(routineDetailsList, { ...sortableOptions, handle: '.routine-details-item-main', onEnd: (evt) => { const routine = allData.routines.find(r => r.id === routineId); if (routine) { const movedItem = routine.exercises.splice(evt.oldIndex, 1)[0]; routine.exercises.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } } }); }
 
 // --- 5. EVENT HANDLER & WORKFLOW FUNCTIONS ---
-// --- [RESTORED] Helper function for the swap modal ---
-function populateExerciseDropdown(selectElement) {
-    const sortedExercises = [...allData.exerciseDatabase].sort((a, b) => a.name.localeCompare(b.name));
-    selectElement.innerHTML = '<option value="" disabled selected>Choose replacement...</option>';
-    sortedExercises.forEach(ex => {
-        const option = document.createElement('option');
-        option.value = ex.id;
-        option.textContent = ex.name;
-        selectElement.appendChild(option);
-    });
-}
-
 function handleAddExerciseToBuilder() {
     const id = routineBuilderState.selectedExerciseId;
     if (id === null) { alert("Please select an exercise from the list."); return; }
@@ -1024,7 +1030,8 @@ function handleFilterChange() {
         type: filterTypeSelect.value
     };
     const sortBy = sortExercisesSelect.value;
-    renderExerciseDatabase(filters, sortBy);
+    const searchQuery = exerciseSearchInput.value.toLowerCase().trim();
+    renderExerciseDatabase(filters, sortBy, searchQuery);
 }
 
 function openDetailsModal(exerciseId) {
@@ -1085,6 +1092,7 @@ filterCategorySelect.addEventListener('change', handleFilterChange);
 filterMuscleSelect.addEventListener('change', handleFilterChange);
 filterTypeSelect.addEventListener('change', handleFilterChange);
 sortExercisesSelect.addEventListener('change', handleFilterChange);
+exerciseSearchInput.addEventListener('input', handleFilterChange);
 detailsModalCloseBtn.addEventListener('click', () => closeModal(exerciseDetailsModal));
 exerciseDetailsModal.addEventListener('click', e => {
     if (e.target.classList.contains('details-tab-btn')) {
