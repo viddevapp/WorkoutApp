@@ -10,6 +10,16 @@ let routineBuilderSortable = null, dailyWorkoutSortable = null, savedRoutinesSor
 let swipeState = { openCardContent: null, instanceIdToSwap: null, instanceIdToEdit: null };
 let exerciseToAdd = { id: null };
 let activeRoutineDetails = { id: null };
+let userPreferences = { theme: 'default' };
+
+const availableThemes = [
+    { id: 'default', name: 'Royal Night', colors: { primary: '#A78BFA', surface: '#24283B' } },
+    { id: 'theme-crimson-steel', name: 'Crimson Steel', colors: { primary: '#F87171', surface: '#262626' } },
+    { id: 'theme-evergreen', name: 'Evergreen', colors: { primary: '#34D399', surface: '#1E2928' } },
+    { id: 'theme-solar-flare', name: 'Solar Flare', colors: { primary: '#FBBF24', surface: '#29251E' } },
+    { id: 'theme-arctic-light', name: 'Arctic Light', colors: { primary: '#60A5FA', surface: '#FFFFFF' } },
+    { id: 'theme-slate', name: 'Slate', colors: { primary: '#9CA3AF', surface: '#27272A' } }
+];
 
 let allData = {
     exerciseDatabase: [],
@@ -46,6 +56,10 @@ const addToRoutineTimeSetsInput = document.getElementById('add-to-routine-time-s
 const addToRoutineDurationInput = document.getElementById('add-to-routine-duration');
 const trackerFooter = document.getElementById('tracker-footer');
 const globalTimerControls = document.getElementById('global-timer-controls');
+const changeThemeBtn = document.getElementById('change-theme-btn');
+const themeModal = document.getElementById('theme-modal');
+const themeSelectionGrid = document.getElementById('theme-selection-grid');
+const closeThemeModalBtn = document.getElementById('close-theme-modal-btn');
 
 
 const circleCircumference = 2 * Math.PI * 54;
@@ -483,17 +497,6 @@ function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesS
 function initRoutineDetailsSortable(routineId) { if (routineDetailsSortable) routineDetailsSortable.destroy(); routineDetailsSortable = new Sortable(routineDetailsList, { ...sortableOptions, handle: '.routine-details-item-main', onEnd: (evt) => { const routine = allData.routines.find(r => r.id === routineId); if (routine) { const movedItem = routine.exercises.splice(evt.oldIndex, 1)[0]; routine.exercises.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } } }); }
 
 // --- 5. EVENT HANDLER & WORKFLOW FUNCTIONS ---
-function populateExerciseDropdown(selectElement) {
-    const sortedExercises = [...allData.exerciseDatabase].sort((a, b) => a.name.localeCompare(b.name));
-    selectElement.innerHTML = '<option value="" disabled selected>Choose replacement...</option>';
-    sortedExercises.forEach(ex => {
-        const option = document.createElement('option');
-        option.value = ex.id;
-        option.textContent = ex.name;
-        selectElement.appendChild(option);
-    });
-}
-
 function handleAddExerciseToBuilder() {
     const id = routineBuilderState.selectedExerciseId;
     if (id === null) { alert("Please select an exercise from the list."); return; }
@@ -1206,8 +1209,56 @@ routineDetailsList.addEventListener('click', e => {
 });
 closeRoutineDetailsBtn.addEventListener('click', () => closeModal(routineDetailsModal));
 
-// --- 8. INITIALIZE APP ---
+// --- 8. THEME LOGIC ---
+function renderThemeModal() {
+    themeSelectionGrid.innerHTML = '';
+    availableThemes.forEach(theme => {
+        const isActive = theme.id === userPreferences.theme;
+        const swatch = document.createElement('button');
+        swatch.className = `theme-swatch ${isActive ? 'active' : ''}`;
+        swatch.dataset.themeId = theme.id;
+        swatch.innerHTML = `
+            <div class="theme-swatch-colors">
+                <div class="theme-swatch-color" style="background-color: ${theme.colors.surface};"></div>
+                <div class="theme-swatch-color" style="background-color: ${theme.colors.primary};"></div>
+            </div>
+            <span>${theme.name}</span>
+        `;
+        themeSelectionGrid.appendChild(swatch);
+    });
+}
+
+function setTheme(themeId) {
+    userPreferences.theme = themeId;
+    document.body.className = themeId === 'default' ? '' : themeId;
+    localStorage.setItem('workoutTrackerTheme', themeId);
+}
+
+function loadTheme() {
+    const savedTheme = localStorage.getItem('workoutTrackerTheme') || 'default';
+    setTheme(savedTheme);
+}
+
+changeThemeBtn.addEventListener('click', () => {
+    actionsDropdown.classList.add('hidden');
+    renderThemeModal();
+    openModal(themeModal);
+});
+
+closeThemeModalBtn.addEventListener('click', () => closeModal(themeModal));
+
+themeSelectionGrid.addEventListener('click', (e) => {
+    const swatch = e.target.closest('.theme-swatch');
+    if (swatch) {
+        const themeId = swatch.dataset.themeId;
+        setTheme(themeId);
+        renderThemeModal(); // Re-render to show the new active state
+    }
+});
+
+// --- 9. INITIALIZE APP ---
 async function initializeApp() {
+    loadTheme();
     loadDataFromLocalStorage();
     loadRoutineBuilderState(); 
     await loadExercisesFromCSV();
@@ -1218,3 +1269,4 @@ async function initializeApp() {
     renderRoutineBuilderList();
 }
 initializeApp();
+

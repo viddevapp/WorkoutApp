@@ -23,7 +23,11 @@
             <div class="nav-actions">
                 <div id="actions-menu-container">
                     <button id="actions-menu-btn" aria-label="Actions Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button>
-                    <div id="actions-dropdown" class="hidden"><button id="import-data-btn">Import Data</button><button id="export-data-btn">Export Data</button></div>
+                    <div id="actions-dropdown" class="hidden">
+                        <button id="change-theme-btn">Change Theme</button>
+                        <button id="import-data-btn">Import Data</button>
+                        <button id="export-data-btn">Export Data</button>
+                    </div>
                 </div>
             </div>
             <input type="file" id="file-loader" accept=".json" style="display: none;">
@@ -269,6 +273,15 @@
                     <button type="submit" class="btn-primary">Save Changes</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="theme-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3>Select a Theme</h3>
+            <div id="theme-selection-grid"></div>
+            <button id="close-theme-modal-btn" class="btn-secondary" style="margin-top: 24px;">Close</button>
         </div>
     </div>
 </body>
