@@ -913,24 +913,23 @@ function openDetailsModal(exerciseId) {
     detailsExerciseName.textContent = exercise.name;
     if (exercise.videoUrl) {
         let videoUrl = exercise.videoUrl;
-        // Check if it's a YouTube embed URL and add loop/autoplay params
+        // [MODIFIED] Correctly add looping parameters for YouTube videos
         if (videoUrl.includes('youtube.com/embed')) {
             try {
                 const url = new URL(videoUrl);
                 const videoId = url.pathname.split('/').pop();
-                url.searchParams.set('autoplay', '1'); // Autoplay the video
-                url.searchParams.set('mute', '1');     // Mute is required for autoplay in most browsers
-                url.searchParams.set('loop', '1');      // Enable looping
                 if (videoId) {
-                    url.searchParams.set('playlist', videoId); // Playlist param with video ID is required for loop
+                    url.searchParams.set('autoplay', '1');
+                    url.searchParams.set('mute', '1');
+                    url.searchParams.set('loop', '1');
+                    // The 'playlist' parameter is REQUIRED for 'loop' to work
+                    url.searchParams.set('playlist', videoId);
+                    videoUrl = url.toString();
                 }
-                videoUrl = url.toString();
             } catch (e) {
-                console.error("Failed to parse video URL:", e);
-                // Fallback to original URL if parsing fails
+                console.error("Failed to parse video URL for looping:", e);
             }
         }
-        // Use a more modern 'allow' attribute for better compatibility
         detailsVideoContainer.innerHTML = `<iframe src="${videoUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
     } else {
         detailsVideoContainer.innerHTML = '<div class="placeholder-card" style="margin:0; border-radius:0;">No video available.</div>';
