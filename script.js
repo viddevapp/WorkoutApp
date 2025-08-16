@@ -42,7 +42,6 @@ const cancelEditRoutineBtn = document.getElementById('cancel-edit-routine-btn');
 const repsBasedInputs = document.getElementById('reps-based-inputs'), timeBasedInputs = document.getElementById('time-based-inputs'), routineTimeSetsInput = document.getElementById('routine-time-sets-input'), routineDurationInput = document.getElementById('routine-duration-input');
 const dailyRoutineSelect = document.getElementById('daily-routine-select'), startRoutineBtn = document.getElementById('start-routine-btn'), activeRoutineDisplay = document.getElementById('active-routine-display'), routineSelectionArea = document.getElementById('routine-selection-area'), activeRoutineInfo = document.getElementById('active-routine-info'), activeRoutineName = document.getElementById('active-routine-name');
 const allModals = document.querySelectorAll('.modal');
-const dateDisplayBtn = document.getElementById('date-display-btn'), prevDayBtn = document.getElementById('prev-day-btn'), nextDayBtn = document.getElementById('next-day-btn');
 const actionsMenuBtn = document.getElementById('actions-menu-btn'), actionsDropdown = document.getElementById('actions-dropdown'), importDataBtn = document.getElementById('import-data-btn'), exportDataBtn = document.getElementById('export-data-btn'), fileLoaderInput = document.getElementById('file-loader');
 const stopwatchModal = document.getElementById('stopwatch-modal'), stopwatchExerciseName = document.getElementById('stopwatch-exercise-name'), stopwatchTimerDisplay = document.getElementById('stopwatch-timer-display'), stopwatchActionBtn = document.getElementById('stopwatch-action-btn'), stopwatchCancelBtn = document.getElementById('stopwatch-cancel-btn');
 const countdownModal = document.getElementById('countdown-modal'), countdownTimerDisplay = document.getElementById('countdown-timer-display'), countdownLabel = document.getElementById('countdown-label'), countdownNextExerciseInfo = document.getElementById('countdown-next-exercise-info'), countdownNextExerciseName = document.getElementById('countdown-next-exercise-name'), countdownNextExerciseDetails = document.getElementById('countdown-next-exercise-details'), countdownProgressCircle = document.querySelector('.timer-progress');
@@ -231,9 +230,7 @@ function renderCurrentPage() {
         renderWorkoutPage();
         initDailyWorkoutSortable();
     }
-    renderDateControls();
 }
-function renderDateControls() { const today = new Date(); today.setHours(0, 0, 0, 0); currentDate.setHours(0, 0, 0, 0); const isToday = currentDate.getTime() === today.getTime(); dateDisplayBtn.textContent = isToday ? 'Today' : currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); nextDayBtn.disabled = currentDate >= today; }
 
 function renderExerciseDatabase(filters = {}, sortBy = 'az', searchQuery = '') {
     dbExerciseListDiv.innerHTML = '';
@@ -591,7 +588,6 @@ function resetRoutineForm() {
     renderRoutineBuilderList();
     clearRoutineBuilderState();
 }
-function changeDate(days) { currentDate.setDate(currentDate.getDate() + days); closeStopwatchModal(true); renderCurrentPage(); }
 function exportDataToFile() { try { const dataAsString = JSON.stringify({ ...allData, exerciseDatabase: [] }, null, 2); const blob = new Blob([dataAsString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `workout-tracker-backup-${getFormattedDate(new Date())}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); } catch (error) { console.error("Export failed:", error); alert("Could not export data."); } }
 function importDataFromFile(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function (e) { try { const importedData = JSON.parse(e.target.result); if (!importedData.history || !importedData.userGoals) { throw new Error("Invalid data file format."); } if (confirm("This will overwrite all current data. Are you sure you want to proceed?")) { allData.routines = importedData.routines || []; allData.history = importedData.history; allData.userGoals = importedData.userGoals; currentDate = new Date(); saveDataToLocalStorage(); renderCurrentPage(); alert("Data imported successfully!"); } } catch (error) { alert('Error reading or parsing file. Please make sure you selected a valid backup file.'); console.error(error); } finally { fileLoaderInput.value = ""; } }; reader.readAsText(file); }
 
@@ -819,14 +815,6 @@ appContainer.addEventListener('touchend', e => {
 
 appContainer.addEventListener('click', e => {
     const t = e.target;
-
-    // --- THIS IS THE DEFINITIVE FIX ---
-    // If a click happens anywhere in the footer, ignore it in this
-    // generic handler. The buttons in the footer have their own specific listeners.
-    if (t.closest('#tracker-footer')) {
-        return;
-    }
-
     if (isSwiping || (touchStartX !== 0 && touchStartX !== touchCurrentX)) { touchStartX = 0; touchCurrentX = 0; if (t.closest('.swipe-content')) { e.stopPropagation(); } return; }
     if (swipeState.openCardContent && !t.closest('.swipe-actions')) { resetSwipeState(); }
 
@@ -1022,9 +1010,6 @@ stopwatchActionBtn.addEventListener('click', () => { if (stopwatchActionBtn.clas
 stopwatchCancelBtn.addEventListener('click', () => closeStopwatchModal());
 closeCompleteModalBtn.addEventListener('click', () => { closeModal(workoutCompleteModal); renderWorkoutPage(); });
 
-prevDayBtn.addEventListener('click', () => changeDate(-1));
-nextDayBtn.addEventListener('click', () => changeDate(1));
-dateDisplayBtn.addEventListener('click', () => { if (dateDisplayBtn.disabled) return; currentDate = new Date(); renderCurrentPage(); });
 document.addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) { allModals.forEach(m => closeModal(m)); closeCountdownModal(); closeStopwatchModal(true); } });
 countdownModal.addEventListener('click', e => { if (e.target.classList.contains('modal-content') || e.target.classList.contains('countdown-timer-wrapper')) closeCountdownModal(); });
 actionsMenuBtn.addEventListener('click', () => actionsDropdown.classList.toggle('hidden'));

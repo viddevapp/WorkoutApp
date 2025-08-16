@@ -152,15 +152,6 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 
 /* 8. Footers */
 #tracker-footer { padding: 12px 16px; background-color: var(--color-surface); border-top: 1px solid var(--color-border); padding-bottom: calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; }
-#date-nav { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
-#date-nav button { background: none; border: none; color: var(--color-text-secondary); cursor: pointer; padding: 0; transition: var(--transition-fast); display: flex; align-items: center; justify-content: center; }
-#date-nav button:not(.date-display) { padding: 4px; }
-#date-nav button svg { width: 24px; height: 24px; }
-#date-nav button:hover:not(:disabled) { color: var(--color-primary); }
-#date-nav button:disabled { color: var(--color-text-tertiary); cursor: not-allowed; }
-.date-display { color: var(--color-text-primary); font-weight: 600; font-size: 16px; text-align: center; border-radius: var(--radius-md); padding: 4px 8px; }
-.date-display:disabled { color: var(--color-text-primary); }
-.date-display:hover:not(:disabled) { background-color: var(--color-surface-raised); color: var(--color-primary-hover); }
 #global-timer-controls { display: flex; align-items: center; gap: 16px; padding: 12px; background-color: var(--color-background); border-radius: var(--radius-md); }
 #global-timer-controls .timer-toggle-area { display: flex; align-items: center; gap: 12px; flex-grow: 1; }
 #global-timer-controls .timer-toggle-area label { font-weight: 500; font-size: 14px; color: var(--color-text-secondary); }
