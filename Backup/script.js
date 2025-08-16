@@ -18,7 +18,11 @@ const availableThemes = [
     { id: 'theme-evergreen', name: 'Evergreen', colors: { primary: '#34D399', surface: '#1E2928' } },
     { id: 'theme-solar-flare', name: 'Solar Flare', colors: { primary: '#FBBF24', surface: '#29251E' } },
     { id: 'theme-arctic-light', name: 'Arctic Light', colors: { primary: '#60A5FA', surface: '#FFFFFF' } },
-    { id: 'theme-slate', name: 'Slate', colors: { primary: '#9CA3AF', surface: '#27272A' } }
+    { id: 'theme-slate', name: 'Slate', colors: { primary: '#9CA3AF', surface: '#27272A' } },
+    { id: 'theme-oceanic', name: 'Oceanic', colors: { primary: '#38BDF8', surface: '#0C1422' } },
+    { id: 'theme-sunset-glow', name: 'Sunset Glow', colors: { primary: '#FB923C', surface: '#2C1A1D' } },
+    { id: 'theme-graphite', name: 'Graphite', colors: { primary: '#6B7280', surface: '#1F1F1F' } },
+    { id: 'theme-forest-mist', name: 'Forest Mist', colors: { primary: '#86EFAC', surface: '#1A211E' } }
 ];
 
 let allData = {
@@ -516,7 +520,6 @@ function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesS
 function initRoutineDetailsSortable(routineId) { if (routineDetailsSortable) routineDetailsSortable.destroy(); routineDetailsSortable = new Sortable(routineDetailsList, { ...sortableOptions, handle: '.routine-details-item-main', onEnd: (evt) => { const routine = allData.routines.find(r => r.id === routineId); if (routine) { const movedItem = routine.exercises.splice(evt.oldIndex, 1)[0]; routine.exercises.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } } }); }
 
 // --- 5. EVENT HANDLER & WORKFLOW FUNCTIONS ---
-// --- [RESTORED] Helper function for the swap modal ---
 function populateExerciseDropdown(selectElement) {
     const sortedExercises = [...allData.exerciseDatabase].sort((a, b) => a.name.localeCompare(b.name));
     selectElement.innerHTML = '<option value="" disabled selected>Choose replacement...</option>';

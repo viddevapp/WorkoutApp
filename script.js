@@ -25,6 +25,15 @@ const availableThemes = [
     { id: 'theme-forest-mist', name: 'Forest Mist', colors: { primary: '#86EFAC', surface: '#1A211E' } }
 ];
 
+const defaultCustomColors = {
+    '--color-primary': '#A78BFA',
+    '--color-surface': '#24283B',
+    '--color-background': '#1A1D2D',
+    '--color-text-primary': '#E5E7EB',
+    '--color-text-on-primary': '#111827'
+};
+
+
 let allData = {
     exerciseDatabase: [],
     routines: [],
@@ -66,6 +75,12 @@ const changeThemeBtn = document.getElementById('change-theme-btn');
 const themeModal = document.getElementById('theme-modal');
 const themeSelectionGrid = document.getElementById('theme-selection-grid');
 const closeThemeModalBtn = document.getElementById('close-theme-modal-btn');
+const customThemeCreator = document.getElementById('custom-theme-creator');
+const colorPickerPrimary = document.getElementById('color-picker-primary');
+const colorPickerSurface = document.getElementById('color-picker-surface');
+const colorPickerBackground = document.getElementById('color-picker-background');
+const colorPickerTextPrimary = document.getElementById('color-picker-text-primary');
+const colorPickerTextOnPrimary = document.getElementById('color-picker-text-on-primary');
 
 
 const circleCircumference = 2 * Math.PI * 54;
@@ -520,6 +535,7 @@ function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesS
 function initRoutineDetailsSortable(routineId) { if (routineDetailsSortable) routineDetailsSortable.destroy(); routineDetailsSortable = new Sortable(routineDetailsList, { ...sortableOptions, handle: '.routine-details-item-main', onEnd: (evt) => { const routine = allData.routines.find(r => r.id === routineId); if (routine) { const movedItem = routine.exercises.splice(evt.oldIndex, 1)[0]; routine.exercises.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } } }); }
 
 // --- 5. EVENT HANDLER & WORKFLOW FUNCTIONS ---
+// --- [RESTORED] Helper function for the swap modal ---
 function populateExerciseDropdown(selectElement) {
     const sortedExercises = [...allData.exerciseDatabase].sort((a, b) => a.name.localeCompare(b.name));
     selectElement.innerHTML = '<option value="" disabled selected>Choose replacement...</option>';
