@@ -19,6 +19,9 @@
                 <button id="nav-workout" class="nav-btn active">Daily Workout</button>
                 <button id="nav-routines" class="nav-btn">Routines</button>
                 <button id="nav-exercises" class="nav-btn">Exercise List</button>
+                <button id="nav-calendar" class="nav-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c0-.414.336-.75.75-.75h10.5a.75.75 0 010 1.5H5.5a.75.75 0 01-.75-.75z" clip-rule="evenodd" /></svg>
+                </button>
             </div>
             <div class="nav-actions">
                 <div id="actions-menu-container">
@@ -122,9 +125,38 @@
                 </div>
              </main>
         </div>
+
+        <!-- Page 4: Calendar -->
+        <div id="calendar-page" class="page">
+            <main>
+                <div class="card">
+                    <div id="calendar-header">
+                        <button id="prev-month-btn" class="calendar-nav-btn" aria-label="Previous Month">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
+                        </button>
+                        <h2 id="calendar-month-year"></h2>
+                        <button id="next-month-btn" class="calendar-nav-btn" aria-label="Next Month">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+                        </button>
+                    </div>
+                    <div id="calendar-weekdays">
+                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                    </div>
+                    <div id="calendar-grid"></div>
+                </div>
+            </main>
+        </div>
     </div>
 
     <!-- Modals -->
+    <div id="workout-summary-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content" style="padding: 0; max-height: 80svh; display: flex; flex-direction: column;">
+            <div id="summary-modal-content" class="scrollable-content"></div>
+            <button id="close-summary-modal-btn" class="btn-secondary" style="margin: 16px; width: calc(100% - 32px);">Close</button>
+        </div>
+    </div>
+
     <div id="exercise-details-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content details-modal-content">
