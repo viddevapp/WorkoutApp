@@ -337,12 +337,19 @@ function renderGlobalTimerControls() {
     }
 }
 
+function generateSetCircles(completed, total) {
+    let html = '';
+    for (let i = 0; i < total; i++) {
+        html += `<div class="set-circle ${i < completed ? 'completed' : ''}"></div>`;
+    }
+    return html;
+}
+
 function renderWorkoutPage() {
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
     resetSwipeState();
-
-    renderGlobalTimerControls(); // Render the global timer on every workout page render
+    renderGlobalTimerControls();
 
     if (!workoutData) {
         routineSelectionArea.classList.remove('hidden');
@@ -427,8 +434,16 @@ function renderWorkoutPage() {
                     <div class="exercise-content">
                         <div class="exercise-header">
                             <div class="exercise-item-main">
-                                <span class="exercise-item-name">${exercise.name}</span>
+                                <div class="exercise-name-wrapper">
+                                    <span class="exercise-item-name">${exercise.name}</span>
+                                    <button class="details-icon-btn" data-id="${exercise.id}" aria-label="View exercise details">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" /></svg>
+                                    </button>
+                                </div>
                                 <small class="exercise-item-stats">${stats}</small>
+                            </div>
+                            <div class="set-circles-container">
+                                ${generateSetCircles(progress.setsCompleted, parseInt(exercise.sets))}
                             </div>
                         </div>
                         ${trackingUI}
@@ -543,7 +558,7 @@ function completeWorkout(isAutoFinish = false) {
     workoutData.isComplete = true;
     closeStopwatchModal(true);
     saveDataToLocalStorage();
-    renderGlobalTimerControls(); // Hide timer on completion
+    renderGlobalTimerControls();
 
     if (isAutoFinish) {
         workoutTotalTimeDisplay.textContent = formatTotalTime(workoutData.completionTime);
@@ -677,7 +692,7 @@ startRoutineBtn.addEventListener('click', () => {
             startTime: Date.now(), 
             completionTime: null, 
             notes: '',
-            timerSettings: { enabled: true, duration: 30 } // Add global timer settings
+            timerSettings: { enabled: true, duration: 30 }
         };
         saveDataToLocalStorage();
         renderWorkoutPage();
@@ -759,7 +774,6 @@ appContainer.addEventListener('click', e => {
     if (isSwiping || (touchStartX !== 0 && touchStartX !== touchCurrentX)) { touchStartX = 0; touchCurrentX = 0; if (t.closest('.swipe-content')) { e.stopPropagation(); } return; }
     if (swipeState.openCardContent && !t.closest('.swipe-actions')) { resetSwipeState(); }
 
-    // Routine Page Actions
     const routinePageActions = t.closest('#routines-page');
     if (routinePageActions) {
         const deleteBtn = t.closest('.swipe-delete-btn');
@@ -796,7 +810,6 @@ appContainer.addEventListener('click', e => {
         }
     }
 
-    // Exercise Page Actions
     const exercisePageActions = t.closest('#exercises-page');
     if (exercisePageActions) {
         const detailsBtn = t.closest('.details-btn');
@@ -810,9 +823,9 @@ appContainer.addEventListener('click', e => {
         }
     }
 
-    // Workout Page Actions
     const workoutPageActions = t.closest('#workout-page');
     if(workoutPageActions) {
+        const detailsBtn = t.closest('.details-icon-btn');
         if (t.id === 'start-new-workout-btn') { if (confirm("This will clear today's completed log. Are you sure?")) { delete allData.history[getFormattedDate(currentDate)]; saveDataToLocalStorage(); renderWorkoutPage(); } return; }
         if (t.id === 'save-summary-changes-btn') {
             const dateKey = getFormattedDate(currentDate);
@@ -831,6 +844,11 @@ appContainer.addEventListener('click', e => {
         const swapBtnWorkout = t.closest('.swipe-swap-btn');
         const deleteBtnWorkout = t.closest('.swipe-delete-btn');
         const editBtnWorkout = t.closest('.swipe-edit-btn');
+        if (detailsBtn) {
+            const id = parseInt(detailsBtn.dataset.id);
+            openDetailsModal(id);
+            return;
+        }
         if (deleteBtnWorkout) {
              if (confirm("Delete this exercise from today's workout?")) {
                 const instanceId = parseFloat(deleteBtnWorkout.dataset.instanceId);

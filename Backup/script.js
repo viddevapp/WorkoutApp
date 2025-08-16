@@ -24,7 +24,7 @@ const navWorkout = document.getElementById('nav-workout'), navRoutines = documen
 const workoutPage = document.getElementById('workout-page'), routinesPage = document.getElementById('routines-page'), exercisesPage = document.getElementById('exercises-page');
 const dbExerciseListDiv = document.getElementById('db-exercise-list');
 const createRoutineForm = document.getElementById('create-routine-form'), routineEditingIdInput = document.getElementById('routine-editing-id'), routineNameInput = document.getElementById('routine-name-input'), routineExerciseInput = document.getElementById('routine-exercise-input'), autocompleteResults = document.getElementById('autocomplete-results'), routineSetsInput = document.getElementById('routine-sets-input'), routineRepsInput = document.getElementById('routine-reps-input'), addExerciseToBuilderBtn = document.getElementById('add-exercise-to-builder-btn'), routineBuilderList = document.getElementById('routine-builder-list'), saveRoutineBtn = document.getElementById('save-routine-btn'), savedRoutinesList = document.getElementById('saved-routines-list');
-const cancelEditRoutineBtn = document.getElementById('cancel-edit-routine-btn'); // New button reference
+const cancelEditRoutineBtn = document.getElementById('cancel-edit-routine-btn');
 const repsBasedInputs = document.getElementById('reps-based-inputs'), timeBasedInputs = document.getElementById('time-based-inputs'), routineTimeSetsInput = document.getElementById('routine-time-sets-input'), routineDurationInput = document.getElementById('routine-duration-input');
 const dailyRoutineSelect = document.getElementById('daily-routine-select'), startRoutineBtn = document.getElementById('start-routine-btn'), activeRoutineDisplay = document.getElementById('active-routine-display'), routineSelectionArea = document.getElementById('routine-selection-area'), activeRoutineInfo = document.getElementById('active-routine-info'), activeRoutineName = document.getElementById('active-routine-name');
 const allModals = document.querySelectorAll('.modal');
@@ -44,6 +44,9 @@ const modalRepsBasedInputs = document.getElementById('modal-reps-based-inputs');
 const modalTimeBasedInputs = document.getElementById('modal-time-based-inputs');
 const addToRoutineTimeSetsInput = document.getElementById('add-to-routine-time-sets');
 const addToRoutineDurationInput = document.getElementById('add-to-routine-duration');
+const trackerFooter = document.getElementById('tracker-footer');
+const globalTimerControls = document.getElementById('global-timer-controls');
+
 
 const circleCircumference = 2 * Math.PI * 54;
 const SWIPE_ACTION_WIDTH = 160; // 2 buttons
@@ -311,10 +314,35 @@ function renderSavedRoutines() {
     });
 }
 
+function renderGlobalTimerControls() {
+    const dateKey = getFormattedDate(currentDate);
+    const workoutData = allData.history[dateKey];
+
+    if (workoutData && !workoutData.isComplete) {
+        globalTimerControls.classList.remove('hidden');
+        const timerSettings = workoutData.timerSettings;
+        const toggle = document.getElementById('global-timer-toggle');
+        toggle.checked = timerSettings.enabled;
+
+        document.querySelectorAll('.global-timer-interval-btn').forEach(btn => {
+            btn.disabled = !timerSettings.enabled;
+            if (parseInt(btn.dataset.time) === timerSettings.duration) {
+                btn.classList.add('selected');
+            } else {
+                btn.classList.remove('selected');
+            }
+        });
+    } else {
+        globalTimerControls.classList.add('hidden');
+    }
+}
+
 function renderWorkoutPage() {
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
     resetSwipeState();
+
+    renderGlobalTimerControls(); // Render the global timer on every workout page render
 
     if (!workoutData) {
         routineSelectionArea.classList.remove('hidden');
@@ -377,7 +405,6 @@ function renderWorkoutPage() {
     workoutData.routine.exercises.forEach(exercise => {
         const progress = workoutData.progress.find(p => p.instanceId === exercise.instanceId);
         if (!progress) return;
-        if (!progress.timer) progress.timer = { enabled: false, duration: 30 };
         const isFinished = progress.setsCompleted >= exercise.sets;
         let isCurrent = false;
         if (!isFinished && !isCurrentExerciseFound) { isCurrent = true; isCurrentExerciseFound = true; }
@@ -393,8 +420,6 @@ function renderWorkoutPage() {
             const buttonText = isFinished ? "All Sets Complete" : `Log Set ${progress.setsCompleted + 1}`;
             trackingUI = `<div class="exercise-actions"><div class="set-progress-display">${progress.setsCompleted} / ${exercise.sets} Sets Completed</div><button class="btn-primary start-reps-set-btn" ${isFinished || !isCurrent ? 'disabled' : ''}>${buttonText}</button></div>`;
         }
-        const intervals = [15, 30, 45];
-        const intervalButtonsHTML = intervals.map(time => `<button class="timer-interval-btn ${progress.timer.duration === time ? 'selected' : ''}" data-time="${time}" ${!progress.timer.enabled ? 'disabled' : ''}>${time}s</button>`).join('');
         
         itemDiv.innerHTML = `
             <div class="swipe-item-container">
@@ -407,16 +432,6 @@ function renderWorkoutPage() {
                             </div>
                         </div>
                         ${trackingUI}
-                        <div class="timer-controls">
-                            <div class="timer-toggle-area">
-                                <label for="timer-toggle-${exercise.instanceId}">Break Timer</label>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" class="timer-toggle" id="timer-toggle-${exercise.instanceId}" ${progress.timer.enabled ? 'checked' : ''}>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="timer-intervals">${intervalButtonsHTML}</div>
-                        </div>
                     </div>
                 </div>
                 <div class="swipe-actions">
@@ -509,7 +524,7 @@ function resetRoutineForm() {
     routineEditingState = { isEditing: false, id: null };
     routineEditingIdInput.value = '';
     saveRoutineBtn.textContent = 'Save Routine';
-    cancelEditRoutineBtn.classList.add('hidden'); // Hide cancel button on reset
+    cancelEditRoutineBtn.classList.add('hidden');
     renderRoutineBuilderList();
     clearRoutineBuilderState();
 }
@@ -528,6 +543,7 @@ function completeWorkout(isAutoFinish = false) {
     workoutData.isComplete = true;
     closeStopwatchModal(true);
     saveDataToLocalStorage();
+    renderGlobalTimerControls(); // Hide timer on completion
 
     if (isAutoFinish) {
         workoutTotalTimeDisplay.textContent = formatTotalTime(workoutData.completionTime);
@@ -560,8 +576,8 @@ function handleSetCompletion(instanceId) {
             startCountdown(60, nextExercise);
         }
     } else {
-        if (progress.timer.enabled) {
-            startCountdown(progress.timer.duration);
+        if (workoutData.timerSettings.enabled) {
+            startCountdown(workoutData.timerSettings.duration);
         }
     }
 }
@@ -631,6 +647,7 @@ navExercises.addEventListener('click', () => showPage('exercises-page'));
 
 addExerciseToBuilderBtn.addEventListener('click', handleAddExerciseToBuilder);
 createRoutineForm.addEventListener('submit', handleSaveRoutine);
+cancelEditRoutineBtn.addEventListener('click', resetRoutineForm);
 routineNameInput.addEventListener('input', () => {
     validateRoutineForm();
     saveRoutineBuilderState();
@@ -644,8 +661,6 @@ routineBuilderList.addEventListener('click', e => {
     }
 });
 
-cancelEditRoutineBtn.addEventListener('click', resetRoutineForm); // New event listener
-
 dailyRoutineSelect.addEventListener('change', () => { startRoutineBtn.disabled = !dailyRoutineSelect.value; });
 startRoutineBtn.addEventListener('click', () => {
     const id = parseInt(dailyRoutineSelect.value);
@@ -653,9 +668,17 @@ startRoutineBtn.addEventListener('click', () => {
     if (sourceRoutine) {
         const dateKey = getFormattedDate(currentDate);
         const hydratedExercises = sourceRoutine.exercises.map(leanEx => { const fullEx = allData.exerciseDatabase.find(dbEx => dbEx.id === leanEx.exerciseId); return { ...fullEx, ...leanEx, instanceId: Date.now() + Math.random() }; });
-        const progress = hydratedExercises.map(ex => ({ instanceId: ex.instanceId, setsCompleted: 0, loggedData: [], timer: { enabled: true, duration: 30 }, stopwatch: { elapsedTime: 0, isRunning: false, startTime: 0 } }));
+        const progress = hydratedExercises.map(ex => ({ instanceId: ex.instanceId, setsCompleted: 0, loggedData: [], stopwatch: { elapsedTime: 0, isRunning: false, startTime: 0 } }));
         const workoutToLog = { name: sourceRoutine.name, id: sourceRoutine.id, exercises: hydratedExercises };
-        allData.history[dateKey] = { routine: workoutToLog, progress, isComplete: false, startTime: Date.now(), completionTime: null, notes: '' };
+        allData.history[dateKey] = { 
+            routine: workoutToLog, 
+            progress, 
+            isComplete: false, 
+            startTime: Date.now(), 
+            completionTime: null, 
+            notes: '',
+            timerSettings: { enabled: true, duration: 30 } // Add global timer settings
+        };
         saveDataToLocalStorage();
         renderWorkoutPage();
         initDailyWorkoutSortable();
@@ -667,7 +690,6 @@ activeRoutineInfo.addEventListener('click', e => {
     if (t.id === 'reset-workout-btn') { if (confirm("Are you sure you want to reset this workout? Your progress for today will be lost.")) { const dateKey = getFormattedDate(currentDate); if (allData.history[dateKey]) { delete allData.history[dateKey]; closeStopwatchModal(true); saveDataToLocalStorage(); renderWorkoutPage(); } } }
 });
 
-// --- SWIPE HANDLING ---
 let touchStartX = 0, touchStartY = 0, touchCurrentX = 0;
 let swipeTarget = null, isSwiping = false, swipeDirection = null;
 function resetSwipeState() { if (swipeState.openCardContent) { swipeState.openCardContent.style.transform = 'translateX(0px)'; } touchStartX = 0; touchStartY = 0; touchCurrentX = 0; swipeTarget = null; isSwiping = false; swipeDirection = null; swipeState.openCardContent = null; }
@@ -763,7 +785,7 @@ appContainer.addEventListener('click', e => {
                 routineBuilderState.exercises = r.exercises.map(leanEx => ({ ...leanEx, instanceId: Date.now() + Math.random() }));
                 renderRoutineBuilderList();
                 saveRoutineBtn.textContent = 'Update Routine';
-                cancelEditRoutineBtn.classList.remove('hidden'); // Show cancel button
+                cancelEditRoutineBtn.classList.remove('hidden');
                 routinesPage.querySelector('main').scrollTo({ top: 0, behavior: 'smooth' });
                 saveRoutineBuilderState();
             }
@@ -854,14 +876,27 @@ appContainer.addEventListener('click', e => {
             } else {
                  openStopwatchModal(instanceId);
             }
-        } else if (t.matches('.timer-toggle, .timer-interval-btn')) {
-            const progress = allData.history[getFormattedDate(currentDate)].progress.find(p => p.instanceId === instanceId);
-            if(t.matches('.timer-toggle')) progress.timer.enabled = t.checked;
-            else progress.timer.duration = parseInt(t.dataset.time);
-            saveDataToLocalStorage(); renderWorkoutPage();
         }
     }
 });
+
+trackerFooter.addEventListener('click', (e) => {
+    const t = e.target;
+    const dateKey = getFormattedDate(currentDate);
+    const workoutData = allData.history[dateKey];
+    if (!workoutData) return;
+
+    if (t.id === 'global-timer-toggle') {
+        workoutData.timerSettings.enabled = t.checked;
+        saveDataToLocalStorage();
+        renderGlobalTimerControls();
+    } else if (t.classList.contains('global-timer-interval-btn')) {
+        workoutData.timerSettings.duration = parseInt(t.dataset.time);
+        saveDataToLocalStorage();
+        renderGlobalTimerControls();
+    }
+});
+
 
 // MODAL LOGIC
 swapExerciseForm.addEventListener('submit', e => { e.preventDefault(); const newExerciseId = parseInt(swapExerciseSelect.value); if (isNaN(newExerciseId) || !swipeState.instanceIdToSwap) return; const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; const exerciseIndex = workoutData.routine.exercises.findIndex(ex => ex.instanceId === swipeState.instanceIdToSwap); const progressIndex = workoutData.progress.findIndex(p => p.instanceId === swipeState.instanceIdToSwap); if (exerciseIndex === -1) return; const originalExercise = workoutData.routine.exercises[exerciseIndex]; const newExerciseDbEntry = allData.exerciseDatabase.find(dbEx => dbEx.id === newExerciseId); const newWorkoutExercise = { ...newExerciseDbEntry, sets: originalExercise.sets, reps: newExerciseDbEntry.trackType === 'reps' ? (originalExercise.reps || '8-12') : undefined, duration: newExerciseDbEntry.trackType === 'time' ? (originalExercise.duration || 60) : undefined, trackType: newExerciseDbEntry.trackType, instanceId: Date.now() + Math.random(), exerciseId: newExerciseId }; workoutData.routine.exercises.splice(exerciseIndex, 1, newWorkoutExercise); if (progressIndex > -1) { workoutData.progress[progressIndex].instanceId = newWorkoutExercise.instanceId; } saveDataToLocalStorage(); renderWorkoutPage(); closeModal(swapExerciseModal); swipeState.instanceIdToSwap = null; });
@@ -916,7 +951,6 @@ function openDetailsModal(exerciseId) {
 
     detailsExerciseName.textContent = exercise.name;
     if (exercise.videoUrl) {
-        // [MODIFIED] Reverted to simpler embed to remove non-working loop logic
         detailsVideoContainer.innerHTML = `<iframe src="${exercise.videoUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
     } else {
         detailsVideoContainer.innerHTML = '<div class="placeholder-card" style="margin:0; border-radius:0;">No video available.</div>';
