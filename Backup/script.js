@@ -24,6 +24,7 @@ const navWorkout = document.getElementById('nav-workout'), navRoutines = documen
 const workoutPage = document.getElementById('workout-page'), routinesPage = document.getElementById('routines-page'), exercisesPage = document.getElementById('exercises-page');
 const dbExerciseListDiv = document.getElementById('db-exercise-list');
 const createRoutineForm = document.getElementById('create-routine-form'), routineEditingIdInput = document.getElementById('routine-editing-id'), routineNameInput = document.getElementById('routine-name-input'), routineExerciseInput = document.getElementById('routine-exercise-input'), autocompleteResults = document.getElementById('autocomplete-results'), routineSetsInput = document.getElementById('routine-sets-input'), routineRepsInput = document.getElementById('routine-reps-input'), addExerciseToBuilderBtn = document.getElementById('add-exercise-to-builder-btn'), routineBuilderList = document.getElementById('routine-builder-list'), saveRoutineBtn = document.getElementById('save-routine-btn'), savedRoutinesList = document.getElementById('saved-routines-list');
+const cancelEditRoutineBtn = document.getElementById('cancel-edit-routine-btn'); // New button reference
 const repsBasedInputs = document.getElementById('reps-based-inputs'), timeBasedInputs = document.getElementById('time-based-inputs'), routineTimeSetsInput = document.getElementById('routine-time-sets-input'), routineDurationInput = document.getElementById('routine-duration-input');
 const dailyRoutineSelect = document.getElementById('daily-routine-select'), startRoutineBtn = document.getElementById('start-routine-btn'), activeRoutineDisplay = document.getElementById('active-routine-display'), routineSelectionArea = document.getElementById('routine-selection-area'), activeRoutineInfo = document.getElementById('active-routine-info'), activeRoutineName = document.getElementById('active-routine-name');
 const allModals = document.querySelectorAll('.modal');
@@ -38,7 +39,6 @@ const filterCategorySelect = document.getElementById('filter-category'), filterM
 const exerciseDetailsModal = document.getElementById('exercise-details-modal'), detailsVideoContainer = document.getElementById('details-video-container'), detailsExerciseName = document.getElementById('details-exercise-name'), detailsTabContent = document.getElementById('details-tab-content'), detailsModalCloseBtn = document.getElementById('details-modal-close-btn');
 const addToRoutineModal = document.getElementById('add-to-routine-modal'), addToRoutineForm = document.getElementById('add-to-routine-form'), addToRoutineTitle = document.getElementById('add-to-routine-title'), addToRoutineSelect = document.getElementById('add-to-routine-select'), addToRoutineSetsInput = document.getElementById('add-to-routine-sets'), addToRoutineRepsInput = document.getElementById('add-to-routine-reps'), cancelAddToRoutineBtn = document.getElementById('cancel-add-to-routine-btn');
 const routineDetailsModal = document.getElementById('routine-details-modal'), routineDetailsTitle = document.getElementById('routine-details-title'), routineDetailsList = document.getElementById('routine-details-list'), closeRoutineDetailsBtn = document.getElementById('close-routine-details-btn');
-// [NEW] References for the "Add to Routine" modal's new inputs
 const modalTrackTypeToggle = document.getElementById('modal-track-type-toggle');
 const modalRepsBasedInputs = document.getElementById('modal-reps-based-inputs');
 const modalTimeBasedInputs = document.getElementById('modal-time-based-inputs');
@@ -509,6 +509,7 @@ function resetRoutineForm() {
     routineEditingState = { isEditing: false, id: null };
     routineEditingIdInput.value = '';
     saveRoutineBtn.textContent = 'Save Routine';
+    cancelEditRoutineBtn.classList.add('hidden'); // Hide cancel button on reset
     renderRoutineBuilderList();
     clearRoutineBuilderState();
 }
@@ -643,6 +644,8 @@ routineBuilderList.addEventListener('click', e => {
     }
 });
 
+cancelEditRoutineBtn.addEventListener('click', resetRoutineForm); // New event listener
+
 dailyRoutineSelect.addEventListener('change', () => { startRoutineBtn.disabled = !dailyRoutineSelect.value; });
 startRoutineBtn.addEventListener('click', () => {
     const id = parseInt(dailyRoutineSelect.value);
@@ -664,7 +667,7 @@ activeRoutineInfo.addEventListener('click', e => {
     if (t.id === 'reset-workout-btn') { if (confirm("Are you sure you want to reset this workout? Your progress for today will be lost.")) { const dateKey = getFormattedDate(currentDate); if (allData.history[dateKey]) { delete allData.history[dateKey]; closeStopwatchModal(true); saveDataToLocalStorage(); renderWorkoutPage(); } } }
 });
 
-// --- [REVISED] SWIPE HANDLING ---
+// --- SWIPE HANDLING ---
 let touchStartX = 0, touchStartY = 0, touchCurrentX = 0;
 let swipeTarget = null, isSwiping = false, swipeDirection = null;
 function resetSwipeState() { if (swipeState.openCardContent) { swipeState.openCardContent.style.transform = 'translateX(0px)'; } touchStartX = 0; touchStartY = 0; touchCurrentX = 0; swipeTarget = null; isSwiping = false; swipeDirection = null; swipeState.openCardContent = null; }
@@ -760,6 +763,7 @@ appContainer.addEventListener('click', e => {
                 routineBuilderState.exercises = r.exercises.map(leanEx => ({ ...leanEx, instanceId: Date.now() + Math.random() }));
                 renderRoutineBuilderList();
                 saveRoutineBtn.textContent = 'Update Routine';
+                cancelEditRoutineBtn.classList.remove('hidden'); // Show cancel button
                 routinesPage.querySelector('main').scrollTo({ top: 0, behavior: 'smooth' });
                 saveRoutineBuilderState();
             }
@@ -912,6 +916,7 @@ function openDetailsModal(exerciseId) {
 
     detailsExerciseName.textContent = exercise.name;
     if (exercise.videoUrl) {
+        // [MODIFIED] Reverted to simpler embed to remove non-working loop logic
         detailsVideoContainer.innerHTML = `<iframe src="${exercise.videoUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
     } else {
         detailsVideoContainer.innerHTML = '<div class="placeholder-card" style="margin:0; border-radius:0;">No video available.</div>';
@@ -951,7 +956,6 @@ function openAddToRoutineModal(id) {
         addToRoutineSelect.innerHTML += `<option value="${r.id}">${r.name}</option>`;
     });
     
-    // [NEW] Reset the modal to the default "Reps" view each time it's opened
     modalRepsBasedInputs.classList.remove('hidden');
     modalTimeBasedInputs.classList.add('hidden');
     const activeButton = modalTrackTypeToggle.querySelector('.track-type-btn[data-track-type="reps"]');
@@ -976,7 +980,6 @@ exerciseDetailsModal.addEventListener('click', e => {
     }
 });
 
-// [MODIFIED] Logic for the "Add to Routine" modal form
 modalTrackTypeToggle.addEventListener('click', e => {
     if (e.target.matches('.track-type-btn')) {
         const type = e.target.dataset.trackType;
