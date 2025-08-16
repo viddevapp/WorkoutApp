@@ -93,7 +93,56 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .active-routine-exercise.current .swipe-item-container { border-color: var(--color-primary); }
 .active-routine-exercise.finished { opacity: 0.6; }
 .exercise-content { flex-grow: 1; display: flex; flex-direction: column; }
-.exercise-header { display: flex; justify-content: center; align-items: center; margin-bottom: 12px; text-align: center; }
+.exercise-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* MODIFIED: Aligns items to the top */
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.exercise-name-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.details-icon-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: var(--transition-fast);
+}
+.details-icon-btn svg {
+    width: 18px;
+    height: 18px;
+}
+.details-icon-btn:hover {
+    color: var(--color-primary);
+    background-color: var(--color-surface-raised);
+}
+.set-circles-container {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    padding-top: 2px; /* Small adjustment for vertical alignment */
+}
+.set-circle {
+    width: 14px; /* MODIFIED: Increased size */
+    height: 14px; /* MODIFIED: Increased size */
+    border-radius: 50%;
+    border: 2px solid var(--color-primary);
+    background-color: transparent;
+    transition: var(--transition-fast);
+}
+.set-circle.completed {
+    background-color: var(--color-primary-hover); /* MODIFIED: Changed color */
+    border-color: var(--color-primary-hover); /* MODIFIED: Changed color */
+}
 .exercise-actions { margin-top: auto; }
 #active-routine-display .workout-summary-card { max-width: 600px; margin-left: auto; margin-right: auto; }
 .workout-summary-card { padding: 0; }
@@ -144,7 +193,6 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .date-display:disabled { color: var(--color-text-primary); }
 .date-display:hover:not(:disabled) { background-color: var(--color-surface-raised); color: var(--color-primary-hover); }
 
-/* [NEW] Global Timer Styles */
 #global-timer-controls {
     display: flex;
     align-items: center;
@@ -189,7 +237,6 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
     color: var(--color-text-on-primary);
     border-color: var(--color-primary-hover);
 }
-
 
 /* 9. Modal Styles */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
