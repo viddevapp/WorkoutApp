@@ -591,14 +591,7 @@ function resetRoutineForm() {
     renderRoutineBuilderList();
     clearRoutineBuilderState();
 }
-
-// THIS IS THE CORRECTED FUNCTION
-function changeDate(days) {
-    currentDate.setDate(currentDate.getDate() + days);
-    closeStopwatchModal(true);
-    renderCurrentPage();
-    renderDateControls(); // This ensures the date display updates
-}
+function changeDate(days) { currentDate.setDate(currentDate.getDate() + days); closeStopwatchModal(true); renderCurrentPage(); }
 function exportDataToFile() { try { const dataAsString = JSON.stringify({ ...allData, exerciseDatabase: [] }, null, 2); const blob = new Blob([dataAsString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `workout-tracker-backup-${getFormattedDate(new Date())}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); } catch (error) { console.error("Export failed:", error); alert("Could not export data."); } }
 function importDataFromFile(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function (e) { try { const importedData = JSON.parse(e.target.result); if (!importedData.history || !importedData.userGoals) { throw new Error("Invalid data file format."); } if (confirm("This will overwrite all current data. Are you sure you want to proceed?")) { allData.routines = importedData.routines || []; allData.history = importedData.history; allData.userGoals = importedData.userGoals; currentDate = new Date(); saveDataToLocalStorage(); renderCurrentPage(); alert("Data imported successfully!"); } } catch (error) { alert('Error reading or parsing file. Please make sure you selected a valid backup file.'); console.error(error); } finally { fileLoaderInput.value = ""; } }; reader.readAsText(file); }
 
@@ -826,6 +819,14 @@ appContainer.addEventListener('touchend', e => {
 
 appContainer.addEventListener('click', e => {
     const t = e.target;
+
+    // --- THIS IS THE DEFINITIVE FIX ---
+    // If a click happens anywhere in the footer, ignore it in this
+    // generic handler. The buttons in the footer have their own specific listeners.
+    if (t.closest('#tracker-footer')) {
+        return;
+    }
+
     if (isSwiping || (touchStartX !== 0 && touchStartX !== touchCurrentX)) { touchStartX = 0; touchCurrentX = 0; if (t.closest('.swipe-content')) { e.stopPropagation(); } return; }
     if (swipeState.openCardContent && !t.closest('.swipe-actions')) { resetSwipeState(); }
 
@@ -1023,13 +1024,7 @@ closeCompleteModalBtn.addEventListener('click', () => { closeModal(workoutComple
 
 prevDayBtn.addEventListener('click', () => changeDate(-1));
 nextDayBtn.addEventListener('click', () => changeDate(1));
-// THIS IS ALSO CORRECTED TO ENSURE 'TODAY' WORKS RELIABLY
-dateDisplayBtn.addEventListener('click', () => {
-    if (dateDisplayBtn.disabled) return;
-    currentDate = new Date();
-    renderCurrentPage();
-    renderDateControls();
-});
+dateDisplayBtn.addEventListener('click', () => { if (dateDisplayBtn.disabled) return; currentDate = new Date(); renderCurrentPage(); });
 document.addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) { allModals.forEach(m => closeModal(m)); closeCountdownModal(); closeStopwatchModal(true); } });
 countdownModal.addEventListener('click', e => { if (e.target.classList.contains('modal-content') || e.target.classList.contains('countdown-timer-wrapper')) closeCountdownModal(); });
 actionsMenuBtn.addEventListener('click', () => actionsDropdown.classList.toggle('hidden'));
