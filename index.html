@@ -48,7 +48,12 @@
                 </div>
                 <div id="routine-selection-area" class="card"><select id="daily-routine-select"><option value="" disabled selected>Select a routine to begin...</option></select><button id="start-routine-btn" class="btn-primary" disabled>Start Routine</button></div>
                 <div id="active-routine-info" class="card hidden"><div class="section-header"><h2 id="active-routine-name"></h2><div class="header-actions"><button id="reset-workout-btn" class="text-btn">Reset</button><button id="finish-workout-btn" class="btn-danger">Finish Workout</button></div></div></div>
-                <div id="active-routine-display" class="scrollable-content"><div class="placeholder-card">Select a routine and click "Start" to see your exercises.</div></div>
+                <div id="active-routine-display" class="scrollable-content">
+                     <div class="placeholder-card">
+                        <span id="placeholder-text">Select a routine and click "Start" to see your exercises.</span>
+                        <button id="rest-day-btn" class="btn-secondary" style="margin-top: 16px;"></button>
+                    </div>
+                </div>
             </main>
             <div id="tracker-footer">
                 <div id="global-timer-controls" class="hidden">

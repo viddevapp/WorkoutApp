@@ -414,16 +414,11 @@ function renderWorkoutPage() {
     resetSwipeState();
     renderGlobalTimerControls();
 
-    if (!workoutData) {
-        routineSelectionArea.classList.toggle('hidden', currentDate < new Date().setHours(0,0,0,0));
-        activeRoutineInfo.classList.add('hidden');
-        activeRoutineDisplay.innerHTML = `<div class="placeholder-card">No workout logged for this day.</div>`;
-        return;
-    }
+    routineSelectionArea.classList.add('hidden');
+    activeRoutineInfo.classList.add('hidden');
+    activeRoutineDisplay.innerHTML = '';
 
-    if (workoutData.isComplete) {
-        routineSelectionArea.classList.add('hidden');
-        activeRoutineInfo.classList.add('hidden');
+    if (workoutData && workoutData.isComplete) {
         let summaryHTML = `<div class="card workout-summary-card"><div class="summary-header"><div><h2>${workoutData.routine.name} - Summary</h2>${workoutData.completionTime ? `<div class="summary-total-time">${formatTotalTime(workoutData.completionTime)}</div>` : ''}</div></div>`;
 
         workoutData.routine.exercises.forEach(exercise => {
@@ -454,86 +449,89 @@ function renderWorkoutPage() {
                 });
             }
 
-            summaryHTML += `<div class="summary-exercise-card">
-                <div class="summary-exercise-header">
-                    <div class="exercise-item-main">
-                        <span class="exercise-item-name">${exercise.name}</span>
-                        <small class="exercise-item-stats">${stats}</small>
-                    </div>
-                </div>
-                <div class="summary-sets-list">${setsHTML}</div>
-            </div>`;
+            summaryHTML += `<div class="summary-exercise-card"><div class="summary-exercise-header"><div class="exercise-item-main"><span class="exercise-item-name">${exercise.name}</span><small class="exercise-item-stats">${stats}</small></div></div><div class="summary-sets-list">${setsHTML}</div></div>`;
         });
         
         summaryHTML += `<div class="summary-notes-section"><h3>Workout Notes</h3><textarea id="workout-notes-input" placeholder="How was the workout? Any PRs?">${workoutData.notes || ''}</textarea></div>`;
         summaryHTML += `<div class="summary-actions"><button class="btn-primary" id="save-summary-changes-btn">Save Changes</button><button class="btn-secondary" id="delete-workout-btn">Delete Workout</button></div></div>`;
         activeRoutineDisplay.innerHTML = summaryHTML;
-        return;
-    }
+    } else if (workoutData && !workoutData.isRestDay) {
+        activeRoutineInfo.classList.remove('hidden');
+        activeRoutineName.textContent = workoutData.routine.name;
+        let isCurrentExerciseFound = false;
 
-    routineSelectionArea.classList.add('hidden');
-    activeRoutineInfo.classList.remove('hidden');
-    activeRoutineName.textContent = workoutData.routine.name;
-    activeRoutineDisplay.innerHTML = '';
-    let isCurrentExerciseFound = false;
-
-    workoutData.routine.exercises.forEach(exercise => {
-        const progress = workoutData.progress.find(p => p.instanceId === exercise.instanceId);
-        if (!progress) return;
-        const isFinished = progress.setsCompleted >= exercise.sets;
-        let isCurrent = false;
-        if (!isFinished && !isCurrentExerciseFound) { isCurrent = true; isCurrentExerciseFound = true; }
-        const itemDiv = document.createElement('div');
-        itemDiv.className = `active-routine-exercise sortable-item ${isCurrent ? 'current' : ''} ${isFinished ? 'finished' : ''}`;
-        itemDiv.dataset.instanceId = exercise.instanceId;
-        let stats, trackingUI;
-        if (exercise.trackType === 'time') {
-            stats = `${progress.setsCompleted} / ${exercise.sets} Sets • ${exercise.duration} sec Target`;
-            trackingUI = `<div class="exercise-actions"><button class="btn-primary start-stopwatch-modal-btn" ${isFinished || !isCurrent ? 'disabled' : ''}>Start Set ${progress.setsCompleted + 1}</button></div>`;
-        } else {
-            stats = `${exercise.sets} sets × ${exercise.reps} reps`;
-            const buttonText = isFinished ? "All Sets Complete" : `Log Set ${progress.setsCompleted + 1}`;
-            trackingUI = `<div class="exercise-actions"><div class="set-progress-display">${progress.setsCompleted} / ${exercise.sets} Sets Completed</div><button class="btn-primary start-reps-set-btn" ${isFinished || !isCurrent ? 'disabled' : ''}>${buttonText}</button></div>`;
-        }
-        
-        itemDiv.innerHTML = `
-            <div class="swipe-item-container">
-                <div class="swipe-content">
-                    <div class="exercise-content">
-                        <div class="exercise-header">
-                            <div class="exercise-item-main">
-                                <div class="exercise-name-wrapper">
-                                    <span class="exercise-item-name">${exercise.name}</span>
-                                    <button class="details-icon-btn" data-id="${exercise.id}" aria-label="View exercise details">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" /></svg>
-                                    </button>
+        workoutData.routine.exercises.forEach(exercise => {
+            const progress = workoutData.progress.find(p => p.instanceId === exercise.instanceId);
+            if (!progress) return;
+            const isFinished = progress.setsCompleted >= exercise.sets;
+            let isCurrent = false;
+            if (!isFinished && !isCurrentExerciseFound) { isCurrent = true; isCurrentExerciseFound = true; }
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `active-routine-exercise sortable-item ${isCurrent ? 'current' : ''} ${isFinished ? 'finished' : ''}`;
+            itemDiv.dataset.instanceId = exercise.instanceId;
+            let stats, trackingUI;
+            if (exercise.trackType === 'time') {
+                stats = `${progress.setsCompleted} / ${exercise.sets} Sets • ${exercise.duration} sec Target`;
+                trackingUI = `<div class="exercise-actions"><button class="btn-primary start-stopwatch-modal-btn" ${isFinished || !isCurrent ? 'disabled' : ''}>Start Set ${progress.setsCompleted + 1}</button></div>`;
+            } else {
+                stats = `${exercise.sets} sets × ${exercise.reps} reps`;
+                const buttonText = isFinished ? "All Sets Complete" : `Log Set ${progress.setsCompleted + 1}`;
+                trackingUI = `<div class="exercise-actions"><div class="set-progress-display">${progress.setsCompleted} / ${exercise.sets} Sets Completed</div><button class="btn-primary start-reps-set-btn" ${isFinished || !isCurrent ? 'disabled' : ''}>${buttonText}</button></div>`;
+            }
+            
+            itemDiv.innerHTML = `
+                <div class="swipe-item-container">
+                    <div class="swipe-content">
+                        <div class="exercise-content">
+                            <div class="exercise-header">
+                                <div class="exercise-item-main">
+                                    <div class="exercise-name-wrapper">
+                                        <span class="exercise-item-name">${exercise.name}</span>
+                                        <button class="details-icon-btn" data-id="${exercise.id}" aria-label="View exercise details">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" /></svg>
+                                        </button>
+                                    </div>
+                                    <small class="exercise-item-stats">${stats}</small>
                                 </div>
-                                <small class="exercise-item-stats">${stats}</small>
+                                <div class="set-circles-container">
+                                    ${generateSetCircles(progress.setsCompleted, parseInt(exercise.sets))}
+                                </div>
                             </div>
-                            <div class="set-circles-container">
-                                ${generateSetCircles(progress.setsCompleted, parseInt(exercise.sets))}
-                            </div>
+                            ${trackingUI}
                         </div>
-                        ${trackingUI}
                     </div>
-                </div>
-                <div class="swipe-actions">
-                    <button class="swipe-action-btn swipe-swap-btn" data-instance-id="${exercise.instanceId}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M7.25 2.75a.75.75 0 00-1.5 0v11.5a.75.75 0 001.5 0V2.75zM12.75 2.75a.75.75 0 00-1.5 0v11.5a.75.75 0 001.5 0V2.75zM4 6.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75a.75.75 0 01-.75-.75zM4 13.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75a.75.75 0 01-.75-.75z" /></svg>
-                        <span>Swap</span>
-                    </button>
-                    <button class="swipe-action-btn swipe-edit-btn" data-instance-id="${exercise.instanceId}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" /><path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" /></svg>
-                        <span>Edit</span>
-                    </button>
-                    <button class="swipe-action-btn swipe-delete-btn" data-instance-id="${exercise.instanceId}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.58.22-2.365.468a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1H8.75zM10 4.5a.75.75 0 01.75.75v8.5a.75.75 0 01-1.5 0v-8.5A.75.75 0 0110 4.5z" clip-rule="evenodd" /></svg>
-                        <span>Delete</span>
-                    </button>
-                </div>
+                    <div class="swipe-actions">
+                        <button class="swipe-action-btn swipe-swap-btn" data-instance-id="${exercise.instanceId}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M7.25 2.75a.75.75 0 00-1.5 0v11.5a.75.75 0 001.5 0V2.75zM12.75 2.75a.75.75 0 00-1.5 0v11.5a.75.75 0 001.5 0V2.75zM4 6.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75a.75.75 0 01-.75-.75zM4 13.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75a.75.75 0 01-.75-.75z" /></svg>
+                            <span>Swap</span>
+                        </button>
+                        <button class="swipe-action-btn swipe-edit-btn" data-instance-id="${exercise.instanceId}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" /><path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" /></svg>
+                            <span>Edit</span>
+                        </button>
+                        <button class="swipe-action-btn swipe-delete-btn" data-instance-id="${exercise.instanceId}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.58.22-2.365.468a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1H8.75zM10 4.5a.75.75 0 01.75.75v8.5a.75.75 0 01-1.5 0v-8.5A.75.75 0 0110 4.5z" clip-rule="evenodd" /></svg>
+                            <span>Delete</span>
+                        </button>
+                    </div>
+                </div>`;
+            activeRoutineDisplay.appendChild(itemDiv);
+        });
+    } else {
+        const isRestDay = workoutData && workoutData.isRestDay;
+        const placeholderText = isRestDay ? "This was a Rest Day." : "No workout logged for this day.";
+        const buttonText = isRestDay ? "Remove Rest Day" : "Mark as Rest Day";
+        
+        activeRoutineDisplay.innerHTML = `
+            <div class="placeholder-card">
+                <span>${placeholderText}</span>
+                <button id="rest-day-btn" class="btn-secondary" style="margin-top: 16px;">${buttonText}</button>
             </div>`;
-        activeRoutineDisplay.appendChild(itemDiv);
-    });
+        
+        if (currentDate.setHours(0,0,0,0) === new Date().setHours(0,0,0,0) && !isRestDay) {
+             routineSelectionArea.classList.remove('hidden');
+        }
+    }
 }
 
 // --- 4. SORTABLE & DRAG/DROP ---
@@ -938,6 +936,20 @@ appContainer.addEventListener('click', e => {
                 if (progress && progress.loggedData[setIndex]) { progress.loggedData[setIndex][key] = input.value; }
             });
             saveDataToLocalStorage(); t.textContent = 'Saved!'; setTimeout(() => { t.textContent = 'Save Changes'; }, 1500); return;
+        }
+
+        if (t.id === 'rest-day-btn') {
+            const dateKey = getFormattedDate(currentDate);
+            const workoutData = allData.history[dateKey];
+    
+            if (workoutData && workoutData.isRestDay) {
+                delete allData.history[dateKey];
+            } else {
+                allData.history[dateKey] = { isRestDay: true };
+            }
+            saveDataToLocalStorage();
+            renderWorkoutPage();
+            return;
         }
 
         const swapBtnWorkout = t.closest('.swipe-swap-btn');
@@ -1413,14 +1425,12 @@ function renderCalendar(date) {
     const daysInMonth = lastDayOfMonth.getDate();
     const startDayIndex = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday...
 
-    // Create cells for previous month's days
     for (let i = 0; i < startDayIndex; i++) {
         const dayDiv = document.createElement('div');
         dayDiv.className = 'calendar-day other-month';
         calendarGrid.appendChild(dayDiv);
     }
 
-    // Create cells for current month's days
     for (let i = 1; i <= daysInMonth; i++) {
         const dayDiv = document.createElement('div');
         dayDiv.className = 'calendar-day';
@@ -1432,10 +1442,15 @@ function renderCalendar(date) {
         }
 
         const dateKey = getFormattedDate(new Date(year, month, i));
-        if (allData.history[dateKey] && allData.history[dateKey].isComplete) {
+        const historyEntry = allData.history[dateKey];
+
+        if (historyEntry && historyEntry.isComplete) {
             dayDiv.classList.add('completed-workout');
             dayDiv.dataset.date = dateKey;
             dayDiv.innerHTML += `<span class="completed-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" clip-rule="evenodd" /></svg></span>`;
+        } else if (historyEntry && historyEntry.isRestDay) {
+            dayDiv.classList.add('rest-day');
+            dayDiv.innerHTML += `<span class="rest-day-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" clip-rule="evenodd" /></svg></span>`;
         }
         calendarGrid.appendChild(dayDiv);
     }
