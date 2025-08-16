@@ -38,7 +38,7 @@ const appContainer = document.getElementById('app-container');
 const navWorkout = document.getElementById('nav-workout'), navRoutines = document.getElementById('nav-routines'), navExercises = document.getElementById('nav-exercises'), navCalendar = document.getElementById('nav-calendar');
 const workoutPage = document.getElementById('workout-page'), routinesPage = document.getElementById('routines-page'), exercisesPage = document.getElementById('exercises-page'), calendarPage = document.getElementById('calendar-page');
 const workoutPageMain = document.querySelector('#workout-page main');
-const dateDisplayBtn = document.getElementById('date-display-btn'), prevDayBtn = document.getElementById('prev-day-btn'), nextDayBtn = document.getElementById('next-day-btn');
+const dailyWorkoutDateDisplay = document.getElementById('daily-workout-date-display');
 const dbExerciseListDiv = document.getElementById('db-exercise-list');
 const createRoutineForm = document.getElementById('create-routine-form'), routineEditingIdInput = document.getElementById('routine-editing-id'), routineNameInput = document.getElementById('routine-name-input'), routineExerciseInput = document.getElementById('routine-exercise-input'), autocompleteResults = document.getElementById('autocomplete-results'), routineSetsInput = document.getElementById('routine-sets-input'), routineRepsInput = document.getElementById('routine-reps-input'), addExerciseToBuilderBtn = document.getElementById('add-exercise-to-builder-btn'), routineBuilderList = document.getElementById('routine-builder-list'), saveRoutineBtn = document.getElementById('save-routine-btn'), savedRoutinesList = document.getElementById('saved-routines-list');
 const cancelEditRoutineBtn = document.getElementById('cancel-edit-routine-btn');
@@ -63,8 +63,7 @@ const modalTimeBasedInputs = document.getElementById('modal-time-based-inputs');
 const addToRoutineTimeSetsInput = document.getElementById('add-to-routine-time-sets');
 const addToRoutineDurationInput = document.getElementById('add-to-routine-duration');
 const trackerFooter = document.getElementById('tracker-footer');
-const globalTimerToggle = document.getElementById('global-timer-toggle');
-const autoStartTimerToggle = document.getElementById('auto-start-timer-toggle');
+const globalTimerControls = document.getElementById('global-timer-controls');
 const changeThemeBtn = document.getElementById('change-theme-btn');
 const themeModal = document.getElementById('theme-modal');
 const themeSelectionGrid = document.getElementById('theme-selection-grid');
@@ -252,16 +251,16 @@ function renderDateDisplay() {
     currentDate.setHours(0, 0, 0, 0);
 
     if (currentDate.getTime() === today.getTime()) {
-        dateDisplayBtn.textContent = 'Today';
+        dailyWorkoutDateDisplay.textContent = 'Today';
     } else if (currentDate.getTime() === yesterday.getTime()) {
-        dateDisplayBtn.textContent = 'Yesterday';
+        dailyWorkoutDateDisplay.textContent = 'Yesterday';
     } else {
-        dateDisplayBtn.textContent = currentDate.toLocaleDateString('en-US', {
+        dailyWorkoutDateDisplay.textContent = currentDate.toLocaleDateString('en-US', {
             month: 'long',
-            day: 'numeric'
+            day: 'numeric',
+            year: 'numeric'
         });
     }
-    nextDayBtn.disabled = currentDate >= today;
 }
 
 function renderExerciseDatabase(filters = {}, sortBy = 'az', searchQuery = '') {
@@ -378,14 +377,12 @@ function renderSavedRoutines() {
 function renderGlobalTimerControls() {
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
-    const timerControlsGrid = document.getElementById('timer-controls-grid');
 
     if (workoutData && !workoutData.isComplete) {
-        timerControlsGrid.classList.remove('hidden');
+        globalTimerControls.classList.remove('hidden');
         const timerSettings = workoutData.timerSettings;
-        
-        globalTimerToggle.checked = timerSettings.enabled;
-        autoStartTimerToggle.checked = timerSettings.autoStartNextExercise;
+        const toggle = document.getElementById('global-timer-toggle');
+        toggle.checked = timerSettings.enabled;
 
         document.querySelectorAll('.global-timer-interval-btn').forEach(btn => {
             btn.disabled = !timerSettings.enabled;
@@ -396,7 +393,7 @@ function renderGlobalTimerControls() {
             }
         });
     } else {
-        timerControlsGrid.classList.add('hidden');
+        globalTimerControls.classList.add('hidden');
     }
 }
 
@@ -425,7 +422,7 @@ function renderWorkoutPage() {
     if (workoutData.isComplete) {
         routineSelectionArea.classList.add('hidden');
         activeRoutineInfo.classList.add('hidden');
-        let summaryHTML = `<div class="card workout-summary-card"><div class="summary-header"><div><h2>${workoutData.routine.name} - Summary</h2>${workoutData.completionTime ? `<div class="summary-total-time">${formatTotalTime(workoutData.completionTime)}</div>` : ''}</div><button class="btn-danger" id="delete-workout-btn">Delete Workout</button></div>`;
+        let summaryHTML = `<div class="card workout-summary-card"><div class="summary-header"><div><h2>${workoutData.routine.name} - Summary</h2>${workoutData.completionTime ? `<div class="summary-total-time">${formatTotalTime(workoutData.completionTime)}</div>` : ''}</div><button class="btn-primary" id="start-new-workout-btn">Start New Workout</button></div>`;
 
         workoutData.routine.exercises.forEach(exercise => {
             const progress = workoutData.progress.find(p => p.instanceId === exercise.instanceId);
@@ -681,9 +678,9 @@ function handleSetCompletion(instanceId) {
     if (isExerciseComplete) {
         if (isLastExerciseInRoutine) {
             setTimeout(() => completeWorkout(true), 250);
-        } else if (workoutData.timerSettings.autoStartNextExercise) {
+        } else {
             const nextExercise = workoutData.routine.exercises[currentIndex + 1];
-            startCountdown(workoutData.timerSettings.duration, nextExercise);
+            startCountdown(60, nextExercise);
         }
     } else {
         if (workoutData.timerSettings.enabled) {
@@ -788,7 +785,7 @@ startRoutineBtn.addEventListener('click', () => {
             startTime: Date.now(), 
             completionTime: null, 
             notes: '',
-            timerSettings: { enabled: true, duration: 30, autoStartNextExercise: true }
+            timerSettings: { enabled: true, duration: 30 }
         };
         saveDataToLocalStorage();
         renderWorkoutPage();
@@ -922,14 +919,7 @@ appContainer.addEventListener('click', e => {
     const workoutPageActions = t.closest('#workout-page');
     if(workoutPageActions) {
         const detailsBtn = t.closest('.details-icon-btn');
-        if (t.id === 'delete-workout-btn') { 
-            if (confirm("This will permanently delete this workout log. Are you sure?")) { 
-                delete allData.history[getFormattedDate(currentDate)]; 
-                saveDataToLocalStorage(); 
-                renderWorkoutPage(); 
-            } 
-            return; 
-        }
+        if (t.id === 'start-new-workout-btn') { if (confirm("This will clear today's completed log. Are you sure?")) { delete allData.history[getFormattedDate(currentDate)]; saveDataToLocalStorage(); renderWorkoutPage(); } return; }
         if (t.id === 'save-summary-changes-btn') {
             const dateKey = getFormattedDate(currentDate);
             const workoutData = allData.history[dateKey];
@@ -1010,7 +1000,7 @@ appContainer.addEventListener('click', e => {
 });
 
 
-trackerFooter.addEventListener('click', (e) => {
+globalTimerControls.addEventListener('click', (e) => {
     const t = e.target;
     const dateKey = getFormattedDate(currentDate);
     const workoutData = allData.history[dateKey];
@@ -1024,9 +1014,6 @@ trackerFooter.addEventListener('click', (e) => {
         workoutData.timerSettings.duration = parseInt(t.dataset.time);
         saveDataToLocalStorage();
         renderGlobalTimerControls();
-    } else if (t.id === 'auto-start-timer-toggle') {
-        workoutData.timerSettings.autoStartNextExercise = t.checked;
-        saveDataToLocalStorage();
     }
 });
 
@@ -1071,14 +1058,6 @@ cancelEditBtn.addEventListener('click', () => closeModal(editWorkoutExerciseModa
 stopwatchActionBtn.addEventListener('click', () => { if (stopwatchActionBtn.classList.contains('log-state')) { logStopwatchSet(); } else { stopStopwatch(); } });
 stopwatchCancelBtn.addEventListener('click', () => closeStopwatchModal());
 closeCompleteModalBtn.addEventListener('click', () => { closeModal(workoutCompleteModal); renderWorkoutPage(); });
-
-prevDayBtn.addEventListener('click', () => changeDay(-1));
-nextDayBtn.addEventListener('click', () => changeDay(1));
-dateDisplayBtn.addEventListener('click', () => {
-    if (dateDisplayBtn.disabled) return;
-    currentDate = new Date();
-    renderWorkoutPage();
-});
 
 document.addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) { allModals.forEach(m => closeModal(m)); closeCountdownModal(); closeStopwatchModal(true); } });
 countdownModal.addEventListener('click', e => { if (e.target.classList.contains('modal-content') || e.target.classList.contains('countdown-timer-wrapper')) closeCountdownModal(); });
@@ -1500,7 +1479,6 @@ calendarGrid.addEventListener('click', (e) => {
 });
 
 closeSummaryModalBtn.addEventListener('click', () => closeModal(workoutSummaryModal));
-
 
 // --- 10. DAY SWIPE LOGIC ---
 let daySwipeState = { startX: 0, startY: 0, isSwiping: false, direction: null };
