@@ -409,50 +409,8 @@ const sortableOptions = {
 
 function initRoutineBuilderSortable() { if (routineBuilderSortable) routineBuilderSortable.destroy(); routineBuilderSortable = new Sortable(routineBuilderList, { ...sortableOptions, handle:'.routine-builder-item', onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); } }); }
 function initDailyWorkoutSortable() { if (dailyWorkoutSortable) dailyWorkoutSortable.destroy(); const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; if (!workoutData) return; dailyWorkoutSortable = new Sortable(activeRoutineDisplay, { ...sortableOptions, handle: '.swipe-content', onEnd: (evt) => { const movedItem = workoutData.routine.exercises.splice(evt.oldIndex, 1)[0]; workoutData.routine.exercises.splice(evt.newIndex, 0, movedItem); const movedProgress = workoutData.progress.splice(evt.oldIndex, 1)[0]; workoutData.progress.splice(evt.newIndex, 0, movedProgress); saveDataToLocalStorage(); renderWorkoutPage(); } }); }
-
-// --- [FIXED] ---
-function initSavedRoutinesSortable() {
-    if (savedRoutinesSortable) savedRoutinesSortable.destroy();
-    savedRoutinesSortable = new Sortable(savedRoutinesList, {
-        ...sortableOptions,
-        handle: '.swipe-content',
-        onEnd: (evt) => {
-            const movedItem = allData.routines.splice(evt.oldIndex, 1)[0];
-            allData.routines.splice(evt.newIndex, 0, movedItem);
-            saveDataToLocalStorage();
-            renderSavedRoutines();
-        },
-        onTap: (evt) => {
-            // Prevents the modal from opening if a swipe action button (like Edit or Delete) was clicked.
-            if (evt.originalEvent.target.closest('.swipe-actions')) {
-                return;
-            }
-            const id = parseInt(evt.item.dataset.id);
-            if (!isNaN(id)) {
-                openRoutineDetailsModal(id);
-            }
-        }
-    });
-}
-
-// --- [FIXED] ---
-function initRoutineDetailsSortable(routineId) {
-    if (routineDetailsSortable) routineDetailsSortable.destroy();
-    routineDetailsSortable = new Sortable(routineDetailsList, {
-        ...sortableOptions,
-        handle: '.routine-details-item-main',
-        onEnd: (evt) => {
-            const routine = allData.routines.find(r => r.id === routineId);
-            if (routine) {
-                const movedItem = routine.exercises.splice(evt.oldIndex, 1)[0];
-                routine.exercises.splice(evt.newIndex, 0, movedItem);
-                saveDataToLocalStorage(); // Saves the new order
-                renderSavedRoutines(); // Updates the main routine list stats
-                renderRoutineDetailsList(routine); // Visually refreshes the modal list
-            }
-        }
-    });
-}
+function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesSortable.destroy(); savedRoutinesSortable = new Sortable(savedRoutinesList, { ...sortableOptions, handle: '.swipe-content', onEnd: (evt) => { const movedItem = allData.routines.splice(evt.oldIndex, 1)[0]; allData.routines.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } }); }
+function initRoutineDetailsSortable(routineId) { if (routineDetailsSortable) routineDetailsSortable.destroy(); routineDetailsSortable = new Sortable(routineDetailsList, { ...sortableOptions, handle: '.routine-details-item-main', onEnd: (evt) => { const routine = allData.routines.find(r => r.id === routineId); if (routine) { const movedItem = routine.exercises.splice(evt.oldIndex, 1)[0]; routine.exercises.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } } }); }
 
 // --- 5. EVENT HANDLER & WORKFLOW FUNCTIONS ---
 function handleAddExerciseToBuilder() {
@@ -722,6 +680,7 @@ appContainer.addEventListener('click', e => {
     if (routinePageActions) {
         const deleteBtn = t.closest('.swipe-delete-btn');
         const editBtn = t.closest('.swipe-edit-btn');
+        const routineCard = t.closest('.swipe-content');
 
         if (deleteBtn) {
             const id = parseInt(deleteBtn.dataset.id);
@@ -745,8 +704,10 @@ appContainer.addEventListener('click', e => {
                 routinesPage.querySelector('main').scrollTo({ top: 0, behavior: 'smooth' });
             }
             resetSwipeState();
+        } else if (routineCard && !t.closest('.swipe-actions')) {
+            const id = parseInt(routineCard.closest('.sortable-item').dataset.id);
+            openRoutineDetailsModal(id);
         }
-        // --- [REMOVED] Redundant click handler for routine card ---
     }
 
     // Exercise Page Actions
