@@ -70,7 +70,7 @@ const themeModal = document.getElementById('theme-modal');
 const themeSelectionGrid = document.getElementById('theme-selection-grid');
 const closeThemeModalBtn = document.getElementById('close-theme-modal-btn');
 const calendarMonthYear = document.getElementById('calendar-month-year'), prevMonthBtn = document.getElementById('prev-month-btn'), nextMonthBtn = document.getElementById('next-month-btn'), calendarGrid = document.getElementById('calendar-grid');
-const workoutSummaryModal = document.getElementById('workout-summary-modal'), summaryModalContent = document.getElementById('summary-modal-content'), closeSummaryModalBtn = document.getElementById('close-summary-modal-btn');
+const dayDetailsModal = document.getElementById('day-details-modal'), dayDetailsContent = document.getElementById('day-details-content'), dayDetailsActions = document.getElementById('day-details-actions');
 
 
 const circleCircumference = 2 * Math.PI * 54;
@@ -380,7 +380,7 @@ function renderGlobalTimerControls() {
     const workoutData = allData.history[dateKey];
     const globalTimerControls = document.getElementById('global-timer-controls');
 
-    if (workoutData && !workoutData.isComplete) {
+    if (workoutData && !workoutData.isComplete && !workoutData.isRestDay) {
         globalTimerControls.classList.remove('hidden');
         const timerSettings = workoutData.timerSettings;
         
@@ -520,12 +520,12 @@ function renderWorkoutPage() {
     } else {
         const isRestDay = workoutData && workoutData.isRestDay;
         const placeholderText = isRestDay ? "This was a Rest Day." : "No workout logged for this day.";
-        const buttonText = isRestDay ? "Remove Rest Day" : "Mark as Rest Day";
+        const buttonText = "Rest Day";
         
         activeRoutineDisplay.innerHTML = `
             <div class="placeholder-card">
                 <span>${placeholderText}</span>
-                <button id="rest-day-btn" class="btn-secondary" style="margin-top: 16px;">${buttonText}</button>
+                <button id="rest-day-btn" class="btn-secondary ${isRestDay ? 'active' : ''}" style="margin-top: 16px;">${buttonText}</button>
             </div>`;
         
         if (currentDate.setHours(0,0,0,0) === new Date().setHours(0,0,0,0) && !isRestDay) {
@@ -1423,7 +1423,7 @@ function renderCalendar(date) {
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
     const daysInMonth = lastDayOfMonth.getDate();
-    const startDayIndex = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday...
+    const startDayIndex = firstDayOfMonth.getDay(); 
 
     for (let i = 0; i < startDayIndex; i++) {
         const dayDiv = document.createElement('div');
@@ -1433,20 +1433,20 @@ function renderCalendar(date) {
 
     for (let i = 1; i <= daysInMonth; i++) {
         const dayDiv = document.createElement('div');
-        dayDiv.className = 'calendar-day';
+        const dayDate = new Date(year, month, i);
+        dayDiv.className = 'calendar-day clickable-day';
         dayDiv.textContent = i;
+        dayDiv.dataset.date = getFormattedDate(dayDate);
         
         const today = new Date();
         if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
             dayDiv.classList.add('today');
         }
 
-        const dateKey = getFormattedDate(new Date(year, month, i));
-        const historyEntry = allData.history[dateKey];
+        const historyEntry = allData.history[dayDiv.dataset.date];
 
         if (historyEntry && historyEntry.isComplete) {
             dayDiv.classList.add('completed-workout');
-            dayDiv.dataset.date = dateKey;
             dayDiv.innerHTML += `<span class="completed-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" clip-rule="evenodd" /></svg></span>`;
         } else if (historyEntry && historyEntry.isRestDay) {
             dayDiv.classList.add('rest-day');
@@ -1456,39 +1456,69 @@ function renderCalendar(date) {
     }
 }
 
-function showWorkoutSummaryModal(dateKey) {
+function showDayDetailsModal(dateKey) {
     const workoutData = allData.history[dateKey];
-    if (!workoutData) return;
+    dayDetailsContent.innerHTML = '';
+    dayDetailsActions.innerHTML = '';
 
-    let summaryHTML = `<div class="workout-summary-card"><div class="summary-header"><div><h2>${workoutData.routine.name} - Summary</h2>${workoutData.completionTime ? `<div class="summary-total-time">${formatTotalTime(workoutData.completionTime)}</div>` : ''}</div></div>`;
-
-    workoutData.routine.exercises.forEach(exercise => {
-        const progress = workoutData.progress.find(p => p.instanceId === exercise.instanceId);
-        const stats = exercise.trackType === 'time' ? `${exercise.sets} sets × ${exercise.duration} sec` : `${exercise.sets} sets × ${exercise.reps} reps`;
-        let setsHTML = '';
-
-        if (exercise.trackType === 'reps') {
-            setsHTML += `<div class="summary-sets-list-header"><span class="set-label">Set</span><span class="reps-label">Reps</span><span class="weight-label">Weight</span></div>`;
-            progress.loggedData.forEach((setData, i) => {
-                setsHTML += `<div class="summary-set-item"><span class="set-label">${i + 1}</span><span class="summary-logged-time" style="flex:1;">${setData.reps}</span><span class="summary-logged-time" style="flex:1;">${setData.weight || '--'}</span></div>`;
-            });
-        } else { // Time-based
-            progress.loggedData.forEach((time, index) => {
-                setsHTML += `<div class="summary-set-item"><span class="set-label">Set ${index + 1}</span><span class="summary-logged-time">${formatStopwatchTime(time)}</span></div>`;
-            });
+    if (workoutData && workoutData.isComplete) {
+        let summaryHTML = `<div class="workout-summary-card"><div class="summary-header"><div><h2>${workoutData.routine.name} - Summary</h2>${workoutData.completionTime ? `<div class="summary-total-time">${formatTotalTime(workoutData.completionTime)}</div>` : ''}</div></div>`;
+        workoutData.routine.exercises.forEach(exercise => {
+            const progress = workoutData.progress.find(p => p.instanceId === exercise.instanceId);
+            const stats = exercise.trackType === 'time' ? `${exercise.sets} sets × ${exercise.duration} sec` : `${exercise.sets} sets × ${exercise.reps} reps`;
+            let setsHTML = '';
+            if (exercise.trackType === 'reps') {
+                setsHTML += `<div class="summary-sets-list-header"><span class="set-label">Set</span><span class="reps-label">Reps</span><span class="weight-label">Weight</span></div>`;
+                progress.loggedData.forEach((setData, i) => {
+                    setsHTML += `<div class="summary-set-item"><span class="set-label">${i + 1}</span><span class="summary-logged-time" style="flex:1;">${setData.reps}</span><span class="summary-logged-time" style="flex:1;">${setData.weight || '--'}</span></div>`;
+                });
+            } else {
+                progress.loggedData.forEach((time, index) => {
+                    setsHTML += `<div class="summary-set-item"><span class="set-label">Set ${index + 1}</span><span class="summary-logged-time">${formatStopwatchTime(time)}</span></div>`;
+                });
+            }
+            summaryHTML += `<div class="summary-exercise-card"><div class="summary-exercise-header"><div class="exercise-item-main"><span class="exercise-item-name">${exercise.name}</span><small class="exercise-item-stats">${stats}</small></div></div><div class="summary-sets-list">${setsHTML}</div></div>`;
+        });
+        if (workoutData.notes) {
+            summaryHTML += `<div class="summary-notes-section"><h3>Workout Notes</h3><p>${workoutData.notes}</p></div>`;
         }
-
-        summaryHTML += `<div class="summary-exercise-card"><div class="summary-exercise-header"><div class="exercise-item-main"><span class="exercise-item-name">${exercise.name}</span><small class="exercise-item-stats">${stats}</small></div></div><div class="summary-sets-list">${setsHTML}</div></div>`;
-    });
-    
-    if (workoutData.notes) {
-        summaryHTML += `<div class="summary-notes-section"><h3>Workout Notes</h3><p>${workoutData.notes}</p></div>`;
+        summaryHTML += `</div>`;
+        dayDetailsContent.innerHTML = summaryHTML;
+    } else {
+        const isRestDay = workoutData && workoutData.isRestDay;
+        const statusText = isRestDay ? "This day is marked as a rest day." : "No workout logged for this day.";
+        dayDetailsContent.innerHTML = `<div class="card" style="margin: 16px; text-align: center;">${statusText}</div>`;
+        const toggleButton = document.createElement('button');
+        toggleButton.id = 'modal-toggle-rest-day-btn';
+        toggleButton.className = 'btn-secondary';
+        toggleButton.textContent = isRestDay ? 'Remove Rest Day' : 'Mark as Rest Day';
+        toggleButton.dataset.date = dateKey;
+        dayDetailsActions.appendChild(toggleButton);
     }
-    summaryHTML += `</div>`;
-    
-    summaryModalContent.innerHTML = summaryHTML;
-    openModal(workoutSummaryModal);
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'btn-secondary';
+    closeButton.textContent = 'Close';
+    closeButton.onclick = () => closeModal(dayDetailsModal);
+    dayDetailsActions.appendChild(closeButton);
+
+    openModal(dayDetailsModal);
 }
+
+dayDetailsActions.addEventListener('click', e => {
+    if (e.target.id === 'modal-toggle-rest-day-btn') {
+        const dateKey = e.target.dataset.date;
+        const historyEntry = allData.history[dateKey];
+        if (historyEntry && historyEntry.isRestDay) {
+            delete allData.history[dateKey];
+        } else {
+            allData.history[dateKey] = { isRestDay: true };
+        }
+        saveDataToLocalStorage();
+        renderCalendar(calendarDate);
+        showDayDetailsModal(dateKey); // Re-render modal content
+    }
+});
 
 prevMonthBtn.addEventListener('click', () => {
     calendarDate.setMonth(calendarDate.getMonth() - 1);
@@ -1501,13 +1531,11 @@ nextMonthBtn.addEventListener('click', () => {
 });
 
 calendarGrid.addEventListener('click', (e) => {
-    const dayCell = e.target.closest('.completed-workout');
+    const dayCell = e.target.closest('.clickable-day');
     if (dayCell && dayCell.dataset.date) {
-        showWorkoutSummaryModal(dayCell.dataset.date);
+        showDayDetailsModal(dayCell.dataset.date);
     }
 });
-
-closeSummaryModalBtn.addEventListener('click', () => closeModal(workoutSummaryModal));
 
 
 // --- 10. DAY SWIPE LOGIC ---

@@ -135,6 +135,11 @@ h3 { margin: 0 0 16px 0; color: var(--color-text-primary); font-size: 16px; font
 .toggle-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
 input:checked + .toggle-slider { background-color: var(--color-accent); }
 input:checked + .toggle-slider:before { transform: translateX(20px); }
+#rest-day-btn.active {
+    background-color: var(--color-primary);
+    color: var(--color-text-on-primary);
+    border-color: var(--color-primary-hover);
+}
 
 /* --- WORKOUT SUMMARY STYLES --- */
 .workout-summary-card { max-width: 800px; margin-left: auto; margin-right: auto; padding: 0; }
@@ -261,7 +266,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .calendar-day { display: flex; justify-content: center; align-items: center; height: 40px; font-size: 14px; border-radius: 50%; position: relative; }
 .calendar-day.other-month { color: var(--color-text-tertiary); }
 .calendar-day.today { font-weight: 700; background-color: var(--color-surface-raised); }
-.calendar-day.completed-workout, .calendar-day.rest-day { cursor: pointer; }
+.calendar-day.clickable-day { cursor: pointer; }
 .calendar-day .completed-icon, .calendar-day .rest-day-icon { position: absolute; bottom: 4px; right: 4px; width: 16px; height: 16px; background-color: var(--color-surface); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 .calendar-day .completed-icon { color: var(--color-accent); }
 .calendar-day .rest-day-icon { color: #FBBF24; }
