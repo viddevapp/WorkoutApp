@@ -59,6 +59,41 @@ function loadDataFromLocalStorage() {
         } catch (e) { console.error("Could not parse data", e); }
     }
 }
+// --- [NEW] ROUTINE BUILDER STATE MANAGEMENT ---
+function saveRoutineBuilderState() {
+    const stateToSave = {
+        builder: routineBuilderState,
+        editing: routineEditingState,
+        name: routineNameInput.value
+    };
+    localStorage.setItem('workoutBuilderProgress', JSON.stringify(stateToSave));
+}
+
+function loadRoutineBuilderState() {
+    const savedProgress = localStorage.getItem('workoutBuilderProgress');
+    if (savedProgress) {
+        try {
+            const { builder, editing, name } = JSON.parse(savedProgress);
+            if (builder && Array.isArray(builder.exercises) && editing) {
+                routineBuilderState = builder;
+                routineEditingState = editing;
+                routineNameInput.value = name || '';
+                if (editing.isEditing) {
+                    saveRoutineBtn.textContent = 'Update Routine';
+                    routineEditingIdInput.value = editing.id;
+                }
+            }
+        } catch (e) {
+            console.error("Could not parse routine builder progress", e);
+            localStorage.removeItem('workoutBuilderProgress'); // Clear corrupted data
+        }
+    }
+}
+
+function clearRoutineBuilderState() {
+    localStorage.removeItem('workoutBuilderProgress');
+}
+
 async function loadExercisesFromCSV() {
     try {
         const response = await fetch('Data.csv');
@@ -407,7 +442,7 @@ const sortableOptions = {
     delayOnTouchOnly: true
 };
 
-function initRoutineBuilderSortable() { if (routineBuilderSortable) routineBuilderSortable.destroy(); routineBuilderSortable = new Sortable(routineBuilderList, { ...sortableOptions, handle:'.routine-builder-item', onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); } }); }
+function initRoutineBuilderSortable() { if (routineBuilderSortable) routineBuilderSortable.destroy(); routineBuilderSortable = new Sortable(routineBuilderList, { ...sortableOptions, handle:'.routine-builder-item', onEnd: (evt) => { const movedItem = routineBuilderState.exercises.splice(evt.oldIndex, 1)[0]; routineBuilderState.exercises.splice(evt.newIndex, 0, movedItem); validateRoutineForm(); saveRoutineBuilderState(); } }); }
 function initDailyWorkoutSortable() { if (dailyWorkoutSortable) dailyWorkoutSortable.destroy(); const dateKey = getFormattedDate(currentDate); const workoutData = allData.history[dateKey]; if (!workoutData) return; dailyWorkoutSortable = new Sortable(activeRoutineDisplay, { ...sortableOptions, handle: '.swipe-content', onEnd: (evt) => { const movedItem = workoutData.routine.exercises.splice(evt.oldIndex, 1)[0]; workoutData.routine.exercises.splice(evt.newIndex, 0, movedItem); const movedProgress = workoutData.progress.splice(evt.oldIndex, 1)[0]; workoutData.progress.splice(evt.newIndex, 0, movedProgress); saveDataToLocalStorage(); renderWorkoutPage(); } }); }
 function initSavedRoutinesSortable() { if (savedRoutinesSortable) savedRoutinesSortable.destroy(); savedRoutinesSortable = new Sortable(savedRoutinesList, { ...sortableOptions, handle: '.swipe-content', onEnd: (evt) => { const movedItem = allData.routines.splice(evt.oldIndex, 1)[0]; allData.routines.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } }); }
 function initRoutineDetailsSortable(routineId) { if (routineDetailsSortable) routineDetailsSortable.destroy(); routineDetailsSortable = new Sortable(routineDetailsList, { ...sortableOptions, handle: '.routine-details-item-main', onEnd: (evt) => { const routine = allData.routines.find(r => r.id === routineId); if (routine) { const movedItem = routine.exercises.splice(evt.oldIndex, 1)[0]; routine.exercises.splice(evt.newIndex, 0, movedItem); saveDataToLocalStorage(); renderSavedRoutines(); } } }); }
@@ -437,6 +472,7 @@ function handleAddExerciseToBuilder() {
     routineBuilderState.selectedExerciseId = null;
     routineExerciseInput.value = '';
     renderRoutineBuilderList();
+    saveRoutineBuilderState(); // [MODIFIED]
 }
 function renderRoutineBuilderList() {
     routineBuilderList.innerHTML = '';
@@ -462,7 +498,15 @@ function renderRoutineBuilderList() {
 }
 function validateRoutineForm() { const name = routineNameInput.value.trim(); const hasExercises = routineBuilderState.exercises.length > 0; saveRoutineBtn.disabled = !(name && hasExercises); }
 function handleSaveRoutine(event) { event.preventDefault(); const name = routineNameInput.value.trim(); const exercisesToSave = routineBuilderState.exercises.map(ex => { const { exerciseId, sets, reps, duration, trackType } = ex; return trackType === 'time' ? { exerciseId, sets, duration, trackType } : { exerciseId, sets, reps, trackType }; }); if (routineEditingState.isEditing) { const r = allData.routines.find(r => r.id === routineEditingState.id); if (r) { r.name = name; r.exercises = exercisesToSave; } } else { const newRoutine = { id: Date.now(), name, exercises: exercisesToSave }; allData.routines.push(newRoutine); } saveDataToLocalStorage(); renderSavedRoutines(); resetRoutineForm(); }
-function resetRoutineForm() { createRoutineForm.reset(); routineBuilderState = { exercises: [], selectedExerciseId: null }; routineEditingState = { isEditing: false, id: null }; routineEditingIdInput.value = ''; saveRoutineBtn.textContent = 'Save Routine'; renderRoutineBuilderList(); }
+function resetRoutineForm() {
+    createRoutineForm.reset();
+    routineBuilderState = { exercises: [], selectedExerciseId: null };
+    routineEditingState = { isEditing: false, id: null };
+    routineEditingIdInput.value = '';
+    saveRoutineBtn.textContent = 'Save Routine';
+    renderRoutineBuilderList();
+    clearRoutineBuilderState(); // [MODIFIED]
+}
 function changeDate(days) { currentDate.setDate(currentDate.getDate() + days); closeStopwatchModal(true); renderCurrentPage(); }
 function exportDataToFile() { try { const dataAsString = JSON.stringify({ ...allData, exerciseDatabase: [] }, null, 2); const blob = new Blob([dataAsString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `workout-tracker-backup-${getFormattedDate(new Date())}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); } catch (error) { console.error("Export failed:", error); alert("Could not export data."); } }
 function importDataFromFile(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function (e) { try { const importedData = JSON.parse(e.target.result); if (!importedData.history || !importedData.userGoals) { throw new Error("Invalid data file format."); } if (confirm("This will overwrite all current data. Are you sure you want to proceed?")) { allData.routines = importedData.routines || []; allData.history = importedData.history; allData.userGoals = importedData.userGoals; currentDate = new Date(); saveDataToLocalStorage(); renderCurrentPage(); alert("Data imported successfully!"); } } catch (error) { alert('Error reading or parsing file. Please make sure you selected a valid backup file.'); console.error(error); } finally { fileLoaderInput.value = ""; } }; reader.readAsText(file); }
@@ -581,8 +625,18 @@ navExercises.addEventListener('click', () => showPage('exercises-page'));
 
 addExerciseToBuilderBtn.addEventListener('click', handleAddExerciseToBuilder);
 createRoutineForm.addEventListener('submit', handleSaveRoutine);
-routineNameInput.addEventListener('input', validateRoutineForm);
-routineBuilderList.addEventListener('click', e => { if (e.target.matches('.delete-btn')) { const instanceId = parseFloat(e.target.dataset.instanceId); routineBuilderState.exercises = routineBuilderState.exercises.filter(ex => ex.instanceId !== instanceId); renderRoutineBuilderList(); } });
+routineNameInput.addEventListener('input', () => {
+    validateRoutineForm();
+    saveRoutineBuilderState(); // [MODIFIED]
+});
+routineBuilderList.addEventListener('click', e => {
+    if (e.target.matches('.delete-btn')) {
+        const instanceId = parseFloat(e.target.dataset.instanceId);
+        routineBuilderState.exercises = routineBuilderState.exercises.filter(ex => ex.instanceId !== instanceId);
+        renderRoutineBuilderList();
+        saveRoutineBuilderState(); // [MODIFIED]
+    }
+});
 
 dailyRoutineSelect.addEventListener('change', () => { startRoutineBtn.disabled = !dailyRoutineSelect.value; });
 startRoutineBtn.addEventListener('click', () => {
@@ -702,6 +756,7 @@ appContainer.addEventListener('click', e => {
                 renderRoutineBuilderList();
                 saveRoutineBtn.textContent = 'Update Routine';
                 routinesPage.querySelector('main').scrollTo({ top: 0, behavior: 'smooth' });
+                saveRoutineBuilderState(); // [MODIFIED]
             }
             resetSwipeState();
         } else if (routineCard && !t.closest('.swipe-actions')) {
@@ -1045,6 +1100,7 @@ closeRoutineDetailsBtn.addEventListener('click', () => closeModal(routineDetails
 // --- 8. INITIALIZE APP ---
 async function initializeApp() {
     loadDataFromLocalStorage();
+    loadRoutineBuilderState(); // [MODIFIED]
     await loadExercisesFromCSV();
     populateFilterControls();
     showPage('workout-page');
