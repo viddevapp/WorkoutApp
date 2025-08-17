@@ -71,6 +71,7 @@ const themeSelectionGrid = document.getElementById('theme-selection-grid');
 const closeThemeModalBtn = document.getElementById('close-theme-modal-btn');
 const calendarMonthYear = document.getElementById('calendar-month-year'), prevMonthBtn = document.getElementById('prev-month-btn'), nextMonthBtn = document.getElementById('next-month-btn'), calendarGrid = document.getElementById('calendar-grid');
 const dayDetailsModal = document.getElementById('day-details-modal'), dayDetailsContent = document.getElementById('day-details-content'), dayDetailsActions = document.getElementById('day-details-actions');
+const streakNumber = document.getElementById('streak-number');
 
 
 const circleCircumference = 2 * Math.PI * 54;
@@ -658,6 +659,7 @@ function completeWorkout(isAutoFinish = false) {
     } else {
         renderWorkoutPage();
     }
+    renderCalendar(calendarDate); // Update streak on completion
 }
 
 function handleSetCompletion(instanceId) {
@@ -921,6 +923,7 @@ appContainer.addEventListener('click', e => {
                 delete allData.history[getFormattedDate(currentDate)]; 
                 saveDataToLocalStorage(); 
                 renderWorkoutPage(); 
+                renderCalendar(calendarDate); // Update streak
             } 
             return; 
         }
@@ -945,10 +948,11 @@ appContainer.addEventListener('click', e => {
             if (workoutData && workoutData.isRestDay) {
                 delete allData.history[dateKey];
             } else {
-                allData.history[dateKey] = { isRestDay: true };
+                allData.history[dateKey] = { isRestDay: true, isComplete: true }; // Mark as complete for streak
             }
             saveDataToLocalStorage();
             renderWorkoutPage();
+            renderCalendar(calendarDate); // Update streak
             return;
         }
 
@@ -1413,6 +1417,56 @@ themeSelectionGrid.addEventListener('click', (e) => {
 });
 
 // --- 9. CALENDAR LOGIC ---
+function calculateCurrentStreak() {
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if today has a completed workout
+    const todayKey = getFormattedDate(today);
+    const todayEntry = allData.history[todayKey];
+    if (todayEntry && todayEntry.isComplete) {
+        streak = 1;
+    }
+
+    // Check previous days
+    for (let i = 1; i < 365; i++) { // Check up to a year back
+        const prevDay = new Date(today);
+        prevDay.setDate(today.getDate() - i);
+        const prevDayKey = getFormattedDate(prevDay);
+        const prevDayEntry = allData.history[prevDayKey];
+
+        if (prevDayEntry && (prevDayEntry.isComplete || prevDayEntry.isRestDay)) {
+            streak++;
+        } else {
+            break; // Streak is broken
+        }
+    }
+    
+    // If today is not complete, the current streak is 0
+    if (!(todayEntry && todayEntry.isComplete)) {
+        // We need to check yesterday's streak
+        let yesterdayStreak = 0;
+        for (let i = 1; i < 365; i++) { // Check up to a year back
+            const prevDay = new Date(today);
+            prevDay.setDate(today.getDate() - i);
+            const prevDayKey = getFormattedDate(prevDay);
+            const prevDayEntry = allData.history[prevDayKey];
+    
+            if (prevDayEntry && (prevDayEntry.isComplete || prevDayEntry.isRestDay)) {
+                yesterdayStreak++;
+            } else {
+                break; // Streak is broken
+            }
+        }
+        return yesterdayStreak > 0 ? yesterdayStreak : 0;
+    }
+
+
+    return streak;
+}
+
+
 function renderCalendar(date) {
     calendarGrid.innerHTML = '';
     const year = date.getFullYear();
@@ -1454,6 +1508,7 @@ function renderCalendar(date) {
         }
         calendarGrid.appendChild(dayDiv);
     }
+    streakNumber.textContent = calculateCurrentStreak();
 }
 
 function showDayDetailsModal(dateKey) {
@@ -1512,7 +1567,7 @@ dayDetailsActions.addEventListener('click', e => {
         if (historyEntry && historyEntry.isRestDay) {
             delete allData.history[dateKey];
         } else {
-            allData.history[dateKey] = { isRestDay: true };
+            allData.history[dateKey] = { isRestDay: true, isComplete: true }; // Mark as complete for streak
         }
         saveDataToLocalStorage();
         renderCalendar(calendarDate);
